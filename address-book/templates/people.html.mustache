@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <title>People</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body>
+      <ul>
+      {{#people}}
+          <li><a href="/profile/{{id}}">{{name}}</a> {{status}}</li>
+      {{/people}}
+      </ul>
+  </body>
+</html>

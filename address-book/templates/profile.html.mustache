@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <title>Profile for {{name}}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body>
+      <dl>
+          <dt>Name</dt>
+          <dd>{{name}}</dd>
+          {{#email}}
+          <dt>Email Address</dt>
+          <dd>{{email}}</dd>
+          {{/email}}
+          {{#address}}
+          <dt>Address</dt>
+          <dd>{{address}}</dd>
+          {{/address}}
+      </dl>
+
+      <ul>
+      {{#friends}}
+          <li><a href="/profile/{{id}}">{{name}}</a>
+      {{/friends}}
+      <ul>
+  </body>
+</html>
