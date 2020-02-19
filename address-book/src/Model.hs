@@ -48,7 +48,7 @@ data EntityFieldWrapper record typ <policy :: Entity record -> Entity User -> Bo
                                     flippedselector :: typ -> Entity record -> Bool> = EntityFieldWrapper _
 @-}
 data EntityFieldWrapper record typ = EntityFieldWrapper (Persist.EntityField record typ)
-{-@ data variance EntityFieldWrapper covariant covariant contravariant invariant invariant @-}
+{-@ data variance EntityFieldWrapper covariant covariant invariant invariant invariant @-}
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 User

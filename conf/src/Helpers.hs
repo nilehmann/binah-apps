@@ -3,8 +3,6 @@
 
 module Helpers where
 
--- I get a liquid haskell error if I don't import this
--- import qualified Data.ByteString.Lazy          as ByteString
 import           Data.Text                      ( Text
                                                 , pack
                                                 )
@@ -37,10 +35,11 @@ chair user = do
 {-@ reviewer :: user:_ -> paper:_ -> TaggedT<{\u -> (entityKey u) == user}, {\_ -> False}> _ {v: Bool | v => isReviewer user paper }@-}
 reviewer :: UserId -> PaperId -> Controller Bool
 reviewer userId paperId = do
-  assignment <- selectFirst (reviewAssignmentUser' ==. userId &&: reviewAssignmentPaper' ==. paperId)
+  assignment <- selectFirst
+    (reviewAssignmentUser' ==. userId &&: reviewAssignmentPaper' ==. paperId)
   case assignment of
     Nothing -> returnTagged False
-    Just _ -> returnTagged True
+    Just _  -> returnTagged True
 
 
 outerJoinBy :: Eq key => (a -> key) -> (b -> key) -> (a -> Maybe b -> c) -> [a] -> [b] -> [c]

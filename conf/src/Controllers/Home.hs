@@ -1,12 +1,17 @@
 module Controllers.Home where
 
-import           Text.Mustache                 ( ToMustache(..) )
+-- I get a liquid haskell error if I don't import this
+import           Data.Int                       ( Int64 )
+import           Text.Mustache                  ( (~>)
+                                                , ToMustache(..)
+                                                )
 import qualified Text.Mustache.Types           as Mustache
-import           Frankie
 
+import           Binah.Core
+import           Binah.Actions
+import           Binah.Infrastructure
 import           Binah.Templates
-import           Binah.Filters
-import           Binah.Frankie
+
 import           Controllers
 
 data Home = Home
