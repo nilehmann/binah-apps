@@ -9,15 +9,15 @@ User
   verified Bool
 
 FriendRequest
-  from UserId    {\viewer -> (entityKey viewer) == from ||
-                             (entityKey viewer) == to   ||
-                             accepted => (friends (entityKey viewer) from || friends (entityKey viewer) to)}
-  to UserId      {\viewer -> (entityKey viewer) == from ||
-                             (entityKey viewer) == to   ||
-                             accepted => (friends (entityKey viewer) from || friends (entityKey viewer) to)}
-  to UserId      {\viewer -> (entityKey viewer) == from ||
-                             (entityKey viewer) == to   ||
-                             accepted => (friends (entityKey viewer) from || friends (entityKey viewer) to)}
+  from UserId   {\viewer -> (entityKey viewer) == from ||
+                            (entityKey viewer) == to   ||
+                            (accepted => (friends (entityKey viewer) from || friends (entityKey viewer) to))}
+  to UserId     {\viewer -> (entityKey viewer) == from ||
+                            (entityKey viewer) == to   ||
+                            (accepted => (friends (entityKey viewer) from || friends (entityKey viewer) to))}
+  accepted Bool {\viewer -> (entityKey viewer) == from ||
+                            (entityKey viewer) == to   ||
+                            (accepted => (friends (entityKey viewer) from || friends (entityKey viewer) to))}
 
   assert (accepted => friends from to)
 -}
