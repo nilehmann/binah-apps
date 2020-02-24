@@ -97,7 +97,7 @@ getMyPapers viewer = do
   paperData  <- projectList2 (paperId', paperTitle') papers
 
   returnTagged $ map
-    (uncurry $ \paperId title -> RowData (Just viewerId) (Just viewerName) paperId title)
+    (uncurry $ RowData (Just viewerId) (Just viewerName))
     paperData
 
 
