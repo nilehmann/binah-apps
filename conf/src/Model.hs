@@ -1,7 +1,6 @@
 {-
 predicate isAuthor :: UserId -> PaperId -> Bool
 predicate isAccepted :: PaperId -> Bool
-predicate isReviewer :: UserId -> PaperId -> Bool
 
 User
   username Text
@@ -15,11 +14,9 @@ Paper
                             (currentStage == PublicStage && accepted) ||
                             isAuthor (entityKey viewer) self}
   title Text    {\viewer -> userLevel viewer == "chair"
-                            isReviewer (entityKey viewer) self ||
                             (currentStage == PublicStage && accepted)
                             isAuthor (entityKey viewer) self}
   abstract Text {\viewer -> userLevel viewer == "chair"
-                            isReviewer (entityKey viewer) self ||
                             (currentStage == PublicStage && accepted)
                             isAuthor (entityKey viewer) self}
   accepted Bool {\viewer -> userLevel viewer == "chair" || currentStage == PublicStage}
@@ -40,18 +37,13 @@ ReviewAssignment
   user UserId     {\viewer -> userLevel viewer == "chair" || (entityKey viewer) == user}
   assignType Text {\viewer -> userLevel viewer == "chair" || (entityKey viewer) == user}
 
-  assert (isReviewer user paper)
-
 Review
   reviewer UserId {\viewer -> userLevel viewer == "chair" || (entityKey viewer) == reviewer}
   paper PaperId   {\viewer -> userLevel viewer == "chair" ||
-                              isReviewer (entityKey viewer) paper ||
                               (currentStage == PublicStage && isAuthor (entityKey viewer) paper)}
   content PaperId {\viewer -> userLevel viewer == "chair" ||
-                              isReviewer (entityKey viewer) paper ||
                               (currentStage == PublicStage && isAuthor (entityKey viewer) paper)}
   score PaperId   {\viewer -> userLevel viewer == "chair" ||
-                              isReviewer (entityKey viewer) paper ||
                               (currentStage == PublicStage && isAuthor (entityKey viewer) paper)}
 -}
 {-# LANGUAGE GADTs #-}
@@ -120,7 +112,6 @@ data EntityFieldWrapper record typ = EntityFieldWrapper (Persist.EntityField rec
 -- * Predicates
 {-@ measure isAuthor :: UserId -> PaperId -> Bool @-}
 {-@ measure isAccepted :: PaperId -> Bool @-}
-{-@ measure isReviewer :: UserId -> PaperId -> Bool @-}
 
 -- * User
 
@@ -230,7 +221,6 @@ paperAuthor' = EntityFieldWrapper PaperAuthor
 {-@ assume paperTitle' :: EntityFieldWrapper <
     {\row viewer ->
         IsPC viewer ||
-        isReviewer (entityKey viewer) (entityKey row) ||
         IsPublic (entityKey row) ||
         isAuthor (entityKey viewer) (entityKey row)
     }
@@ -244,7 +234,6 @@ paperTitle' = EntityFieldWrapper PaperTitle
 {-@ assume paperAbstract' :: EntityFieldWrapper <
     {\row viewer ->
         IsPC viewer ||
-        isReviewer (entityKey viewer) (entityKey row) ||
         IsPublic (entityKey row) ||
         isAuthor (entityKey viewer) (entityKey row)
     }
@@ -316,8 +305,6 @@ paperCoauthorAuthor' = EntityFieldWrapper PaperCoauthorAuthor
   }
 @-}
 
-{-@ invariant {v: Entity ReviewAssignment | isReviewer (reviewAssignmentUser (entityVal v)) (reviewAssignmentPaper (entityVal v)) }@-}
-
 {-@ assume reviewAssignmentId' :: EntityFieldWrapper <
     {\row viewer -> True}
   , {\row field -> field == entityKey row}
@@ -376,7 +363,6 @@ reviewId' = EntityFieldWrapper ReviewId
 {-@ assume reviewPaper' :: EntityFieldWrapper <
     {\row viewer ->
         IsPC viewer ||
-        isReviewer (entityKey viewer) (reviewPaper (entityVal row)) ||
         (currentStage == PublicStage && isAuthor (entityKey viewer) (reviewPaper (entityVal row)))
     }
   , {\row field -> field == reviewPaper (entityVal row)}
@@ -387,7 +373,7 @@ reviewPaper' :: EntityFieldWrapper Review PaperId
 reviewPaper' = EntityFieldWrapper ReviewPaper
 
 {-@ assume reviewReviewer' :: EntityFieldWrapper <
-    {\row viewer -> IsPC viewer || isReviewer (entityKey viewer) (reviewPaper (entityVal row))}
+    {\row viewer -> IsPC viewer}
   , {\row field -> field == reviewReviewer (entityVal row)}
   , {\field row -> field == reviewReviewer (entityVal row)}
   > _ _
@@ -398,7 +384,6 @@ reviewReviewer' = EntityFieldWrapper ReviewReviewer
 {-@ assume reviewContent' :: EntityFieldWrapper <
     {\row viewer ->
         IsPC viewer ||
-        isReviewer (entityKey viewer) (reviewPaper (entityVal row)) ||
         (currentStage == PublicStage && isAuthor (entityKey viewer) (reviewPaper (entityVal row)))
     }
   , {\row field -> field == reviewContent (entityVal row)}
@@ -411,7 +396,6 @@ reviewContent' = EntityFieldWrapper ReviewContent
 {-@ assume reviewScore' :: EntityFieldWrapper <
     {\row viewer ->
         IsPC viewer ||
-        isReviewer (entityKey viewer) (reviewPaper (entityVal row)) ||
         (currentStage == PublicStage && isAuthor (entityKey viewer) (reviewPaper (entityVal row)))
     }
   , {\row field -> field == reviewScore (entityVal row)}

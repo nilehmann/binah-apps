@@ -46,21 +46,15 @@ instance ToMustache PaperData where
     , "reviews" ~> toMustache reviews
     ]
 
-{-@ getReviews :: paper:_ -> TaggedT<{\u -> IsPC u || (currentStage == PublicStage && isAuthor (entityKey u) paper)}, {\_ -> False}> _ _ @-}
+{-@ getReviews ::
+  paper: _ ->
+  TaggedT<{\u -> IsPC u || (currentStage == PublicStage && isAuthor (entityKey u) paper)}, {\_ -> False}> _ _
+@-}
 getReviews :: PaperId -> Controller [ReviewData]
 getReviews paperId = do
   reviews     <- selectList (reviewPaper' ==. paperId)
   reviewsData <- projectList2 (reviewScore', reviewContent') reviews
   returnTagged $ map (uncurry ReviewData) reviewsData
-
-
-{-@ getMyReviews :: user: _ -> paper: _ -> TaggedT<{\u -> isReviewer user paper && (entityKey u) == user}, {\_ -> False}> _ _ @-}
-getMyReviews :: UserId -> PaperId -> Controller [ReviewData]
-getMyReviews userId paperId = do
-  reviews     <- selectList (reviewReviewer' ==. userId &&: reviewPaper' ==. paperId)
-  reviewsData <- projectList2 (reviewScore', reviewContent') reviews
-  returnTagged $ map (uncurry ReviewData) reviewsData
-
 
 {-@ getAuthors ::
   {v: _ | IsPublic (entityKey v) || isAuthor (entityKey currentUser) (entityKey v) || IsPC currentUser} ->
@@ -100,20 +94,15 @@ paperShow pid = do
   case maybePaper of
     Nothing    -> respondTagged notFound
     Just paper -> do
-      isReviewer <- reviewer viewerId paperId
-      isPC       <- pc viewer
-
-      authors    <- if isPC then getAuthors paper else returnTagged []
-      reviews    <- if
-        | isPC       -> getReviews paperId
-        | isReviewer -> getMyReviews viewerId paperId
-        | otherwise  -> returnTagged []
-      (title, abstract) <- if isPC || isReviewer
+      isPC              <- pc viewer
+      authors           <- if isPC then getAuthors paper else returnTagged []
+      reviews           <- if isPC then getReviews paperId else returnTagged []
+      (title, abstract) <- if isPC
         then project2 (paperTitle', paperAbstract') paper
         else if currentStage == PublicStage
           then do
-              accepted <- project paperAccepted' paper
-              if accepted then project2 (paperTitle', paperAbstract') paper else returnTagged ("", "")
+            accepted <- project paperAccepted' paper
+            if accepted then project2 (paperTitle', paperAbstract') paper else returnTagged ("", "")
           else returnTagged ("", "")
 
       respondHtml $ PaperData title abstract authors reviews

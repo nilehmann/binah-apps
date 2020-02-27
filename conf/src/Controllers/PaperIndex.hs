@@ -36,7 +36,7 @@ instance ToMustache PaperIndex where
 
 data RowData = RowData {paperDataAuthorId :: Maybe UserId, paperDataAuthor :: Maybe Text,  paperDataId :: PaperId, paperDataTitle :: Text }
 
-instance ToMustache  RowData where
+instance ToMustache RowData where
   toMustache (RowData authorId authorName paperId paperTitle) = Mustache.object
     [ "paper_id" ~> toMustache (keyToText paperId)
     , "author_id" ~> toMustache (fmap keyToText authorId)
@@ -76,18 +76,7 @@ getAcceptedPapers = do
   joinWithAuthors $ zip authorIds paperData
 
 
-{-@ getAssignedPapers :: viewer: _ -> TaggedT<{\u -> (entityKey u) == viewer}, {\_ -> False}> _ _  @-}
-getAssignedPapers :: UserId -> Controller [RowData]
-getAssignedPapers viewerId = do
-  myAssignments <- selectList (reviewAssignmentUser' ==. viewerId)
-  paperIds      <- projectList reviewAssignmentPaper' myAssignments
-  papers        <- selectList (paperId' <-. paperIds)
-
-  paperData     <- projectList2 (paperId', paperTitle') papers
-  returnTagged $ map (uncurry $ RowData Nothing Nothing) paperData
-
-
-{-@ getMyPapers :: viewer: Entity User -> TaggedT<{\u -> (entityKey viewer) == (entityKey u)}, {\_ -> False}> _ _ @-}
+{-@ getMyPapers :: v: _ -> TaggedT<{\u -> (entityKey v) == (entityKey u)}, {\_ -> False}> _ _ @-}
 getMyPapers :: Entity User -> Controller [RowData]
 getMyPapers viewer = do
   viewerId   <- project userId' viewer
@@ -96,9 +85,7 @@ getMyPapers viewer = do
   papers     <- selectList (paperAuthor' ==. viewerId)
   paperData  <- projectList2 (paperId', paperTitle') papers
 
-  returnTagged $ map
-    (uncurry $ RowData (Just viewerId) (Just viewerName))
-    paperData
+  returnTagged $ map (uncurry $ RowData (Just viewerId) (Just viewerName)) paperData
 
 
 {-@ paperIndex :: TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
@@ -112,5 +99,5 @@ paperIndex = do
   papers   <- case (currentStage, isPC) of
     (PublicStage, _   ) -> getAcceptedPapers
     (_          , True) -> getAllPapers
-    _                   -> getAssignedPapers viewerId
+    _                   -> getMyPapers viewer
   respondHtml (PaperIndex papers)

@@ -1,7 +1,8 @@
 {-
 predicate isInstructor :: UserId -> CourseId -> Bool
+predicate isEnrolled   :: UserId -> CoruseId -> Bool
 
-u: User
+User
   username Text
   email Text {\viewer -> viewer == u}
   name Text
@@ -21,19 +22,20 @@ row: StudentCourse
   course CourseId
   grade String {\viewer -> (entityKey viewer) == (studentCourseStudent row) || isInstructor (entityKey viewer) (studentCourseCourse row)}
 
+  assert (isEnrolled (studentCourseStudent row) (studentCourseCourse row))
+
 row: Assignment
   name Text
   owner UserId
   course CourseId
-
-  assert (isAssignmentOf (entityKey row) (assignmentCourse row))
+  description Text
 
 row: Submission
   assignment AssignmentId
   course  CourseId
   author  UserId
-  content Text {\viewer -> submissionAuthor row == entityKey viewer || isInstructor (entityKey viewer) (submissionCourse row)}
-  grade   Text {\viewer -> submissionAuthor row == entityKey viewer || isInstructor (entityKey viewer) (submissionCourse row)}
+  content Text   {\viewer -> submissionAuthor row == entityKey viewer || isInstructor (entityKey viewer) (submissionCourse row)}
+  grade   String {\viewer -> submissionAuthor row == entityKey viewer || isInstructor (entityKey viewer) (submissionCourse row)}
 -}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -80,9 +82,12 @@ Assignment
   name Text
   owner UserId
   course CourseId
+  description Text
+
 
 Submission
   assignment AssignmentId
+  course CourseId
   author UserId
   content Text
   grade String
@@ -97,9 +102,11 @@ data EntityFieldWrapper record typ < policy :: Entity record -> Entity User -> B
 data EntityFieldWrapper record typ = EntityFieldWrapper (Persist.EntityField record typ)
 {-@ data variance EntityFieldWrapper covariant covariant invariant invariant invariant @-}
 
+----------------------------------------------------------------------------------------
 -- * Predicates
+----------------------------------------------------------------------------------------
 {-@ measure isInstructor :: UserId -> CourseId -> Bool @-}
-{-@ measure isInstructorOfAssignment :: UserId -> AssignmentId -> Bool @-}
+{-@ measure isEnrolled :: UserId -> CourseId -> Bool @-}
 
 ----------------------------------------------------------------------------------------
 -- * User
@@ -263,7 +270,7 @@ studentCourseCourse' :: EntityFieldWrapper StudentCourse CourseId
 studentCourseCourse' = EntityFieldWrapper StudentCourseCourse
 
 {-@ assume studentCourseGrade' :: EntityFieldWrapper <
-    {\row viewer -> (entityKey viewer) == (studentcourseStudent row) || isInstructor (studentCourseStudent (entityVal row)) (studentCourseCourse (entityVal row))}
+    {\row viewer -> entityKey viewer == studentCourseStudent (entityVal row) || isInstructor (studentCourseStudent (entityVal row)) (studentCourseCourse (entityVal row))}
   , {\row field -> field == studentCourseGrade (entityVal row)}
   , {\field row -> field == studentCourseGrade (entityVal row)}
   > _ _
@@ -271,15 +278,18 @@ studentCourseCourse' = EntityFieldWrapper StudentCourseCourse
 studentCourseGrade' :: EntityFieldWrapper StudentCourse String
 studentCourseGrade' = EntityFieldWrapper StudentCourseGrade
 
+{-@ invariant {v: Entity StudentCourse | isEnrolled (studentCourseStudent (entityVal v)) (studentCourseCourse (entityVal v))} @-}
+
 ----------------------------------------------------------------------------------------
 -- * Assignment
 ----------------------------------------------------------------------------------------
 
 {-@
 data Assignment = Assignment
-  { assignmentName   :: _
-  , assignmentOwner  :: _
-  , assignmentCourse :: _
+  { assignmentName        :: _
+  , assignmentOwner       :: _
+  , assignmentCourse      :: _
+  , assignmentDescription :: _
   }
 @-}
 
@@ -319,7 +329,14 @@ assignmentOwner' = EntityFieldWrapper AssignmentOwner
 assignmentCourse' :: EntityFieldWrapper Assignment CourseId
 assignmentCourse' = EntityFieldWrapper AssignmentCourse
 
-
+{-@ assume assignmentDescription' :: EntityFieldWrapper <
+    {\row viewer -> isInstructor (entityKey viewer) (assignmentCourse (entityVal row)) || isEnrolled (entityKey viewer) (assignmentCourse (entityVal row))}
+  , {\row field -> field == assignmentDescription (entityVal row)}
+  , {\field row -> field == assignmentDescription (entityVal row)}
+  > _ _
+@-}
+assignmentDescription' :: EntityFieldWrapper Assignment Text
+assignmentDescription' = EntityFieldWrapper AssignmentDescription
 
 ----------------------------------------------------------------------------------------
 -- * Submission
@@ -328,6 +345,7 @@ assignmentCourse' = EntityFieldWrapper AssignmentCourse
 {-@
 data Submission = Submission
   { submissionAssignment :: _
+  , submissionCourse     :: _
   , submissionAuthor     :: _
   , submissionContent    :: _
   , submissionGrade      :: _
@@ -352,6 +370,15 @@ submissionId' = EntityFieldWrapper SubmissionId
 submissionAssignment' :: EntityFieldWrapper Submission AssignmentId
 submissionAssignment' = EntityFieldWrapper SubmissionAssignment
 
+{-@ assume submissionCourse' :: EntityFieldWrapper <
+    {\row viewer -> True}
+  , {\row field -> field == submissionCourse (entityVal row)}
+  , {\field row -> field == submissionCourse (entityVal row)}
+  > _ _
+@-}
+submissionCourse' :: EntityFieldWrapper Submission CourseId
+submissionCourse' = EntityFieldWrapper SubmissionCourse
+
 {-@ assume submissionAuthor' :: EntityFieldWrapper <
     {\row viewer -> True}
   , {\row field -> field == submissionAuthor (entityVal row)}
@@ -362,7 +389,7 @@ submissionAuthor' :: EntityFieldWrapper Submission UserId
 submissionAuthor' = EntityFieldWrapper SubmissionAuthor
 
 {-@ assume submissionContent' :: EntityFieldWrapper <
-    {\row viewer -> True}
+    {\row viewer -> submissionAuthor (entityVal row) == entityKey viewer || isInstructor (entityKey viewer) (submissionCourse (entityVal row))}
   , {\row field -> field == submissionContent (entityVal row)}
   , {\field row -> field == submissionContent (entityVal row)}
   > _ _
@@ -371,7 +398,7 @@ submissionContent' :: EntityFieldWrapper Submission Text
 submissionContent' = EntityFieldWrapper SubmissionContent
 
 {-@ assume submissionGrade' :: EntityFieldWrapper <
-    {\row viewer -> True}
+    {\row viewer -> submissionAuthor (entityVal row) == entityKey viewer || isInstructor (entityKey viewer) (submissionCourse (entityVal row))}
   , {\row field -> field == submissionGrade (entityVal row)}
   , {\field row -> field == submissionGrade (entityVal row)}
   > _ _

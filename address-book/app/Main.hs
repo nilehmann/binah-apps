@@ -103,6 +103,7 @@ setup = do
 
   backend <- ask
 
+
   return $ Config { configBackend       = backend
                   , configTemplateCache = templateCache
                   , configAuthMethod    = httpAuthDb

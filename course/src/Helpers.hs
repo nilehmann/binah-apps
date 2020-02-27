@@ -12,25 +12,7 @@ import           Database.Persist.Sql           ( fromSqlKey
                                                 )
 
 import           Binah.Core
-import           Binah.Actions
-import           Binah.Filters
-import           Binah.Infrastructure
-import           Binah.Templates
-import           Binah.Frankie
 import           Model
-import           Controllers
-
-{-@ pc :: u: Entity User -> TaggedT<{\_ -> True}, {\_ -> False}> _ {v: Bool | v <=> IsPC u} @-}
-pc :: Monad m => Entity User -> TaggedT m Bool
-pc user = do
-  level <- project userLevel' user
-  returnTagged (level == "chair" || level == "pc")
-
-{-@ chair :: u: Entity User -> TaggedT<{\_ -> True}, {\_ -> False}> _ {v: Bool | v <=> IsChair u} @-}
-chair :: Monad m => Entity User -> TaggedT m Bool
-chair user = do
-  level <- project userLevel' user
-  returnTagged (level == "chair")
 
 outerJoinBy :: Eq key => (a -> key) -> (b -> key) -> (a -> Maybe b -> c) -> [a] -> [b] -> [c]
 outerJoinBy xsKey ysKey f xs ys =

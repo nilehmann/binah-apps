@@ -102,7 +102,7 @@ instance WebMonad TIO where
                         r -> return r
   server port hostPref app =
     let settings = Wai.setHost hostPref $ Wai.setPort port $
-                   Wai.setServerName "frankie" $ Wai.defaultSettings
+                   Wai.setServerName "frankie" Wai.defaultSettings
     in Wai.runSettings settings $ toWaiApplication app
 
 instance MonadTIO m => MonadTIO (ControllerT m) where
