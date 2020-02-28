@@ -1,6 +1,8 @@
 module Main where
 
-import Lib
+import Controllers.AssignmentShow
+import Controllers.CourseIndex
+import Controllers.SubmissionShow
 
 main :: IO ()
-main = someFunc
+main = undefined
