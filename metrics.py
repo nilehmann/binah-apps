@@ -8,8 +8,9 @@ import subprocess
 import tabulate
 
 APPS = {
-    'conf': ['PaperIndex', 'PaperShow', 'ReviewShow'],
-    'course': ['CourseIndex', 'AssignmentShow', 'SubmissionShow']
+    # 'conf': ['PaperIndex', 'PaperShow', 'ReviewShow'],
+    'conf': ['PaperShow'],
+    # 'course': ['CourseIndex', 'AssignmentShow', 'SubmissionShow']
 }
 ROOT = os.path.abspath(os.path.dirname(__file__))
 

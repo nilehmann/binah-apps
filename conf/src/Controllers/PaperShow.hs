@@ -55,7 +55,7 @@ instance ToMustache PaperData where
 {-@ getReviews ::
   p: _ ->
   TaggedT<{\v -> IsPC v ||
-                (currentStage == PublicStage && isAuthor (entityKey v) (entityKey p))},
+                 (currentStage == PublicStage && isAuthor (entityKey v) (entityKey p))},
           {\_ -> False}> _ _ @-}
 getReviews :: Entity Paper -> Controller [ReviewData]
 getReviews paper = do
@@ -111,6 +111,3 @@ paperShow pid = do
           else return ("", "")
 
       respondHtml $ PaperData title abstract authors reviews
-
-
--- (a -> TIO<p, q> b) -> [a] -> TIO<p, q> [b]
