@@ -48,16 +48,16 @@ updateReview reviewId = do
   viewer <- requireAuthUser
   isPC   <- pc viewer
 
-  if not isPC || currentStage /= ReviewStage then respondTagged forbidden else returnTagged ()
+  if not isPC || currentStage /= ReviewStage then respondTagged forbidden else return ()
 
   params <- parseForm
   case lookup "content" params of
     Just content -> updateContent reviewId (decodeUtf8 content)
-    Nothing      -> returnTagged ()
+    Nothing      -> return ()
 
   case lookup "score" params of
     Just score -> updateScore reviewId (read . show . decodeUtf8 $ score)
-    Nothing    -> returnTagged ()
+    Nothing    -> return ()
 
 {-@ reviewShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
 reviewShow :: Int64 -> Controller ()
@@ -67,11 +67,11 @@ reviewShow rid = do
   viewerId <- project userId' viewer
 
   req      <- request
-  if reqMethod req == methodPost then updateReview reviewId else returnTagged ()
+  if reqMethod req == methodPost then updateReview reviewId else return ()
 
   maybeReview <- selectFirst (reviewId' ==. reviewId)
   review      <- case maybeReview of
-    Just review -> returnTagged review
+    Just review -> return review
     Nothing     -> respondTagged notFound
 
   isPC <- pc viewer
@@ -86,8 +86,8 @@ reviewShow rid = do
         Just _ -> do
           reviewData <- project2 (reviewScore', reviewContent') review
           respondHtml (uncurry ReviewData reviewData)
-        Nothing -> returnTagged ()
-    _ -> returnTagged ()
+        Nothing -> return ()
+    _ -> return ()
 
   respondTagged forbidden
 

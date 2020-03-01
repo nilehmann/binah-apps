@@ -34,7 +34,12 @@ instance TemplateData PaperIndex where
 instance ToMustache PaperIndex where
   toMustache (PaperIndex papers) = Mustache.object ["papers" ~> map toMustache papers]
 
-data RowData = RowData {paperDataAuthorId :: Maybe UserId, paperDataAuthor :: Maybe Text,  paperDataId :: PaperId, paperDataTitle :: Text }
+data RowData = RowData
+  { paperDataAuthorId :: Maybe UserId
+  , paperDataAuthor :: Maybe Text
+  ,  paperDataId :: PaperId
+  , paperDataTitle :: Text
+  }
 
 instance ToMustache RowData where
   toMustache (RowData authorId authorName paperId paperTitle) = Mustache.object
@@ -51,7 +56,7 @@ joinWithAuthors papersByAuthor = do
   authors     <- selectList (userId' <-. map fst papersByAuthor)
   authorsById <- projectList2 (userId', userName') authors
 
-  returnTagged $ innerJoin
+  return $ innerJoin
     (\authorId (paperId, title) authorName ->
       RowData (Just authorId) (Just authorName) paperId title
     )
@@ -85,7 +90,7 @@ getMyPapers viewer = do
   papers     <- selectList (paperAuthor' ==. viewerId)
   paperData  <- projectList2 (paperId', paperTitle') papers
 
-  returnTagged $ map (uncurry $ RowData (Just viewerId) (Just viewerName)) paperData
+  return $ map (uncurry $ RowData (Just viewerId) (Just viewerName)) paperData
 
 
 {-@ paperIndex :: TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}

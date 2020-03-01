@@ -9,19 +9,27 @@ import tabulate
 
 APPS = {
     'conf': ['PaperIndex', 'PaperShow', 'ReviewShow'],
-    'course': ['AssignmentShow', 'CourseIndex', 'SubmissionShow']
+    'course': ['CourseIndex', 'AssignmentShow', 'SubmissionShow']
 }
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def count(path):
+    lines = [l.strip() for l in open(path, 'r')]
+
+    last_import = -1
+    for i, line in enumerate(lines):
+        if line.startswith("import"):
+            last_import = i
+
     insideLH = False
     annots = 0
     loc = 0
-    for line in open(path, 'r'):
-        line = line.strip()
-        if not line:
+    for line in lines[last_import + 1:]:
+        if not line or line.startswith('--'):
             continue
+        assert len(line) <= 100, line
+
         loc += 1
 
         if line.startswith('{-@'):
@@ -100,10 +108,10 @@ def metrics_for_app(app_name, clean=False, n=3):
     metrics = {controller: metrics_for_controller(controller, n) for controller in APPS[app_name]}
     tab = tabulate_metrics(metrics)
     print()
-    print(
-        tabulate.tabulate(tab,
-                          headers=['Controller', 'LOC', 'Annots.', 'Ver. Time (s)'],
-                          tablefmt='latex_booktabs'))
+    print(tabulate.tabulate(
+        tab,
+        headers=['Controller', 'LOC', 'Annots.', 'Ver. Time (s)'],
+    ))
     print()
 
 

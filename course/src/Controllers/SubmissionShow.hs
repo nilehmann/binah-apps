@@ -28,7 +28,10 @@ import           Model
 import           Controllers
 import           Helpers
 
-data SubmissionData = SubmissionData { submissionDataContent :: Text, submissionDataGrade :: String }
+data SubmissionData = SubmissionData
+  { submissionDataContent :: Text
+  , submissionDataGrade :: String
+  }
 
 instance TemplateData SubmissionData where
   templateFile = "submission.show.html.mustache"

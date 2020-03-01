@@ -34,7 +34,11 @@ instance TemplateData CourseIndex where
 instance ToMustache CourseIndex where
   toMustache (CourseIndex courses) = Mustache.object ["courses" ~> map toMustache courses]
 
-data CourseData = CourseData {courseDataId :: CourseId, courseDataName :: Text, courseDataGrade :: String}
+data CourseData = CourseData
+  { courseDataId :: CourseId
+  , courseDataName :: Text
+  , courseDataGrade :: String
+  }
 
 instance ToMustache CourseData where
   toMustache (CourseData id name grade) = Mustache.object

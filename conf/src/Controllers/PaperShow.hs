@@ -14,6 +14,7 @@ import           Text.Mustache                  ( (~>)
 import qualified Text.Mustache.Types           as Mustache
 import           Frankie
 
+
 import           Binah.Core
 import           Binah.Actions
 import           Binah.Filters
@@ -29,7 +30,12 @@ import           Controllers
 
 data ReviewData = ReviewData { reviewDataScore :: Int, reviewDataContent :: Text}
 
-data PaperData = PaperData { paperDataTitle :: Text, paperDataAbstract :: Text, paperDataAuthors :: [Text], reviews :: [ReviewData] }
+data PaperData = PaperData
+  { paperDataTitle :: Text
+  , paperDataAbstract :: Text
+  , paperDataAuthors :: [Text]
+  , reviews :: [ReviewData]
+  }
 
 instance TemplateData PaperData where
   templateFile = "paper.show.html.mustache"
@@ -47,19 +53,18 @@ instance ToMustache PaperData where
     ]
 
 {-@ getReviews ::
-  paper: _ ->
-  TaggedT<{\u -> IsPC u || (currentStage == PublicStage && isAuthor (entityKey u) paper)}, {\_ -> False}> _ _
-@-}
-getReviews :: PaperId -> Controller [ReviewData]
-getReviews paperId = do
+  p: _ ->
+  TaggedT<{\v -> IsPC v ||
+                (currentStage == PublicStage && isAuthor (entityKey v) (entityKey p))},
+          {\_ -> False}> _ _ @-}
+getReviews :: Entity Paper -> Controller [ReviewData]
+getReviews paper = do
+  paperId     <- project paperId' paper
   reviews     <- selectList (reviewPaper' ==. paperId)
   reviewsData <- projectList2 (reviewScore', reviewContent') reviews
-  returnTagged $ map (uncurry ReviewData) reviewsData
+  return $ map (uncurry ReviewData) reviewsData
 
-{-@ getAuthors ::
-  {v: _ | IsPublic (entityKey v) || isAuthor (entityKey currentUser) (entityKey v) || IsPC currentUser} ->
-  TaggedT<{\u -> u == currentUser}, {\_ -> False}> _ _
-@-}
+{-@ getAuthors :: p: _ -> TaggedT<{\u -> PcOrAuthorOrAccepted p u}, {\_ -> False}> _ _ @-}
 getAuthors :: Entity Paper -> Controller [Text]
 getAuthors paper = do
   (paperId, authorId) <- project2 (paperId', paperAuthor') paper
@@ -70,7 +75,7 @@ getAuthors paper = do
   coauthors           <- selectList (paperCoauthorPaper' ==. paperId)
   coauthorNames       <- projectList paperCoauthorAuthor' coauthors
 
-  returnTagged $ authors ++ coauthorNames
+  return $ authors ++ coauthorNames
 
 
 {-@ paperShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
@@ -83,10 +88,10 @@ paperShow pid = do
 
   myPaper  <- selectFirst (paperId' ==. paperId &&: paperAuthor' ==. viewerId)
   case myPaper of
-    Nothing    -> returnTagged ()
+    Nothing    -> return ()
     Just paper -> do
       authors <- getAuthors paper
-      reviews <- if currentStage == PublicStage then getReviews paperId else returnTagged []
+      reviews <- if currentStage == PublicStage then getReviews paper else return []
       (title, abstract) <- project2 (paperTitle', paperAbstract') paper
       respondHtml $ PaperData title abstract authors reviews
 
@@ -95,15 +100,17 @@ paperShow pid = do
     Nothing    -> respondTagged notFound
     Just paper -> do
       isPC              <- pc viewer
-      authors           <- if isPC then getAuthors paper else returnTagged []
-      reviews           <- if isPC then getReviews paperId else returnTagged []
+      authors           <- if isPC then getAuthors paper else return []
+      reviews           <- if isPC then getReviews paper else return []
       (title, abstract) <- if isPC
         then project2 (paperTitle', paperAbstract') paper
         else if currentStage == PublicStage
           then do
             accepted <- project paperAccepted' paper
-            if accepted then project2 (paperTitle', paperAbstract') paper else returnTagged ("", "")
-          else returnTagged ("", "")
+            if accepted then project2 (paperTitle', paperAbstract') paper else return ("", "")
+          else return ("", "")
 
       respondHtml $ PaperData title abstract authors reviews
 
+
+-- (a -> TIO<p, q> b) -> [a] -> TIO<p, q> [b]

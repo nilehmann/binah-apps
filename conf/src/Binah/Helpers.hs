@@ -46,7 +46,7 @@ project2
 project2 (field1, field2) record = do
   field1 <- project field1 record
   field2 <- project field2 record
-  returnTagged (field1, field2)
+  return (field1, field2)
 
 
 {-@
@@ -85,7 +85,7 @@ project3 (field1, field2, field3) record = do
   field1 <- project field1 record
   field2 <- project field2 record
   field3 <- project field3 record
-  returnTagged (field1, field2, field3)
+  return (field1, field2, field3)
 
 
 {-@
@@ -121,7 +121,7 @@ projectList2
 projectList2 (field1, field2) records = do
   fields1 <- projectList field1 records
   fields2 <- projectList field2 records
-  returnTagged $ zip fields1 fields2
+  return $ zip fields1 fields2
 
 {-@
 assume projectList3 :: forall < policy1 :: Entity record -> Entity User -> Bool
@@ -167,4 +167,4 @@ projectList3 (field1, field2, field3) records = do
   fields1 <- projectList field1 records
   fields2 <- projectList field2 records
   fields3 <- projectList field3 records
-  returnTagged $ zip3 fields1 fields2 fields3
+  return $ zip3 fields1 fields2 fields3

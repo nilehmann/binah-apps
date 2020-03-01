@@ -114,7 +114,7 @@ setup = do
 guardVerified :: MonadController w m => Entity User -> TaggedT m ()
 guardVerified user = do
   verified <- project userVerifiedField user
-  if verified then returnTagged () else respondTagged forbidden
+  if verified then return () else respondTagged forbidden
 
 
 data Profile = Profile {profileName :: Text, profileAddress :: Maybe Text, profileEmail :: Maybe Text, friends :: [Person] }
@@ -140,7 +140,7 @@ getFriends userId = do
   requests2 <- selectList (friendRequestToField ==. userId &&: friendRequestAcceptedField ==. True)
   userIds2  <- projectList friendRequestFromField requests2
   users     <- selectList (userIdField <-. (userIds1 ++ userIds2))
-  returnTagged users
+  return users
 
 
 {-@ isFriendWith :: viewer: UserId -> userId: UserId -> TaggedT<{\v -> (entityKey v) == viewer}, {\_ -> False}> _ {v: Bool | v => friends viewer userId} @-}
@@ -154,8 +154,8 @@ isFriendWith viewer userId = do
     &&: friendRequestAcceptedField
     ==. True
   case friendRequest of
-    Just _  -> returnTagged True
-    Nothing -> returnTagged False
+    Just _  -> return True
+    Nothing -> return False
 
 
 {-@ profile :: {v: Int64 | True} -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
@@ -171,7 +171,7 @@ profile uid = do
       maybeUser <- selectFirst (userIdField ==. userId)
       user      <- case maybeUser of
         Nothing   -> respondTagged notFound
-        Just user -> returnTagged user
+        Just user -> return user
       userName               <- project userNameField user
 
       areFriends             <- loggedInUserId `isFriendWith` userId
@@ -181,12 +181,12 @@ profile uid = do
           friends     <- getFriends userId
           friendIds   <- projectList userIdField friends
           friendNames <- projectList userNameField friends
-          returnTagged
+          return
             ( Just userAddress
             , map (\(id, name) -> Person (show $ Sql.fromSqlKey id) name Friend)
                   (zip friendIds friendNames)
             )
-        else returnTagged (Nothing, [])
+        else return (Nothing, [])
       page <- renderTemplate $ Profile userName userAddress Nothing friends
       respondTagged . okHtml . ByteString.fromStrict . encodeUtf8 $ page
 
@@ -255,8 +255,8 @@ myProfile = do
       friendNames <- projectList userNameField friends
       let friends = map (\(id, name) -> Person (show $ Sql.fromSqlKey id) name Friend)
                         (zip friendIds friendNames)
-      returnTagged friends
-    else returnTagged []
+      return friends
+    else return []
 
   let profile = Profile userName (Just userAddress) (Just userEmail) friends
   page <- renderTemplate profile

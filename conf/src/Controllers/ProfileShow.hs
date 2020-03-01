@@ -45,13 +45,13 @@ profileShow uid = do
   maybeUser <- selectFirst (userId' ==. userId)
   user <- case maybeUser of
     Nothing -> respondTagged notFound
-    Just user -> returnTagged user
+    Just user -> return user
   name <- project userName' user
   affiliation <- project userAffiliation' user
   isChair <- chair viewer
   email <- if isChair || viewerId == userId
     then do
        email <- project userEmail' user
-       returnTagged (Just email)
-    else returnTagged Nothing
+       return (Just email)
+    else return Nothing
   respondHtml (ProfileData name affiliation email)

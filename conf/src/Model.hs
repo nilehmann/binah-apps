@@ -1,5 +1,6 @@
 {-
 predicate isAuthor :: UserId -> PaperId -> Bool
+
 predicate isAccepted :: PaperId -> Bool
 
 User
@@ -113,6 +114,31 @@ data EntityFieldWrapper record typ = EntityFieldWrapper (Persist.EntityField rec
 {-@ measure isAuthor :: UserId -> PaperId -> Bool @-}
 {-@ measure isAccepted :: PaperId -> Bool @-}
 
+
+---------------------------------------------------------
+-- * Policies
+---------------------------------------------------------
+{-@ predicate IsPC USER = userLevel (entityVal USER) == "chair" || userLevel (entityVal USER) == "pc" @-}
+{-@ predicate IsChair USER = userLevel (entityVal USER) == "chair" @-}
+
+{-@ predicate PcOrAuthorOrAccepted PAPER VIEWER =
+    IsPC VIEWER ||
+    isAuthor (entityKey VIEWER) (entityKey PAPER) ||
+    (currentStage == PublicStage && paperAccepted (entityVal PAPER)) @-}
+
+{-@ predicate PcOrAuthorOrAccepted' PAPER VIEWER =
+    IsPC VIEWER ||
+    isAuthor (entityKey VIEWER) (paperCoauthorPaper (entityVal PAPER)) ||
+    (currentStage == PublicStage && isAccepted (paperCoauthorPaper (entityVal PAPER))) @-}
+
+{-@ predicate PcOrPublic PAPER VIEWER =
+    IsPC VIEWER ||
+    currentStage == PublicStage @-}
+
+{-@ predicate PcOrAuthorIfPublic REVIEW VIEWER =
+    IsPC VIEWER ||
+    (currentStage == PublicStage && isAuthor (entityKey VIEWER) (reviewPaper (entityVal REVIEW))) @-}
+
 -- * User
 
 {-@ data User = User
@@ -124,8 +150,6 @@ data EntityFieldWrapper record typ = EntityFieldWrapper (Persist.EntityField rec
   }
 @-}
 
-{-@ predicate IsPC USER = userLevel (entityVal USER) == "chair" || userLevel (entityVal USER) == "pc" @-}
-{-@ predicate IsChair USER = userLevel (entityVal USER) == "chair" @-}
 
 {-@ assume userId' :: EntityFieldWrapper <
     {\row viewer -> True}
@@ -206,11 +230,7 @@ paperId' :: EntityFieldWrapper Paper PaperId
 paperId' = EntityFieldWrapper PaperId
 
 {-@ assume paperAuthor' :: EntityFieldWrapper <
-    {\row viewer ->
-        IsPC viewer ||
-        IsPublic (entityKey row) ||
-        isAuthor (entityKey viewer) (entityKey row)
-    }
+    {\row viewer -> PcOrAuthorOrAccepted row viewer}
   , {\row field -> field == paperAuthor (entityVal row)}
   , {\field row -> field == paperAuthor (entityVal row)}
   > _ _
@@ -219,11 +239,7 @@ paperAuthor' :: EntityFieldWrapper Paper UserId
 paperAuthor' = EntityFieldWrapper PaperAuthor
 
 {-@ assume paperTitle' :: EntityFieldWrapper <
-    {\row viewer ->
-        IsPC viewer ||
-        IsPublic (entityKey row) ||
-        isAuthor (entityKey viewer) (entityKey row)
-    }
+    {\row viewer -> PcOrAuthorOrAccepted row viewer}
   , {\row field -> field == paperTitle (entityVal row)}
   , {\field row -> field == paperTitle (entityVal row)}
   > _ _
@@ -232,11 +248,7 @@ paperTitle' :: EntityFieldWrapper Paper Text
 paperTitle' = EntityFieldWrapper PaperTitle
 
 {-@ assume paperAbstract' :: EntityFieldWrapper <
-    {\row viewer ->
-        IsPC viewer ||
-        IsPublic (entityKey row) ||
-        isAuthor (entityKey viewer) (entityKey row)
-    }
+    {\row viewer -> PcOrAuthorOrAccepted row viewer}
   , {\row field -> field == paperAbstract (entityVal row)}
   , {\field row -> field == paperAbstract (entityVal row)}
   > _ _
@@ -245,7 +257,7 @@ paperAbstract' :: EntityFieldWrapper Paper Text
 paperAbstract' = EntityFieldWrapper PaperAbstract
 
 {-@ assume paperAccepted' :: EntityFieldWrapper <
-    {\row viewer -> IsPC viewer || currentStage == PublicStage}
+    {\row viewer -> PcOrPublic row viewer}
   , {\row field -> field == paperAccepted (entityVal row)}
   , {\field row -> field == paperAccepted (entityVal row)}
   > _ _
@@ -271,11 +283,7 @@ paperCoauthorId' :: EntityFieldWrapper PaperCoauthor PaperCoauthorId
 paperCoauthorId' = EntityFieldWrapper PaperCoauthorId
 
 {-@ assume paperCoauthorPaper' :: EntityFieldWrapper <
-    {\row viewer ->
-        IsPC viewer ||
-        IsPublic (paperCoauthorPaper (entityVal row)) ||
-        isAuthor (entityKey viewer) (paperCoauthorPaper (entityVal row))
-    }
+    {\row viewer -> PcOrAuthorOrAccepted' row viewer}
   , {\row field -> field == paperCoauthorPaper (entityVal row)}
   , {\field row -> field == paperCoauthorPaper (entityVal row)}
   > _ _
@@ -284,11 +292,7 @@ paperCoauthorPaper' :: EntityFieldWrapper PaperCoauthor PaperId
 paperCoauthorPaper' = EntityFieldWrapper PaperCoauthorPaper
 
 {-@ assume paperCoauthorAuthor' :: EntityFieldWrapper <
-    {\row viewer ->
-        IsPC viewer ||
-        IsPublic (paperCoauthorPaper (entityVal row)) ||
-        isAuthor (entityKey viewer) (paperCoauthorPaper (entityVal row))
-    }
+    {\row viewer -> PcOrAuthorOrAccepted' row viewer}
   , {\row field -> field == paperCoauthorAuthor (entityVal row)}
   , {\field row -> field == paperCoauthorAuthor (entityVal row)}
   > _ _
@@ -361,10 +365,7 @@ reviewId' :: EntityFieldWrapper Review ReviewId
 reviewId' = EntityFieldWrapper ReviewId
 
 {-@ assume reviewPaper' :: EntityFieldWrapper <
-    {\row viewer ->
-        IsPC viewer ||
-        (currentStage == PublicStage && isAuthor (entityKey viewer) (reviewPaper (entityVal row)))
-    }
+    {\row viewer -> PcOrAuthorIfPublic row viewer}
   , {\row field -> field == reviewPaper (entityVal row)}
   , {\field row -> field == reviewPaper (entityVal row)}
   > _ _
@@ -382,10 +383,7 @@ reviewReviewer' :: EntityFieldWrapper Review UserId
 reviewReviewer' = EntityFieldWrapper ReviewReviewer
 
 {-@ assume reviewContent' :: EntityFieldWrapper <
-    {\row viewer ->
-        IsPC viewer ||
-        (currentStage == PublicStage && isAuthor (entityKey viewer) (reviewPaper (entityVal row)))
-    }
+    {\row viewer -> PcOrAuthorIfPublic row viewer}
   , {\row field -> field == reviewContent (entityVal row)}
   , {\field row -> field == reviewContent (entityVal row)}
   > _ _
@@ -394,10 +392,7 @@ reviewContent' :: EntityFieldWrapper Review Text
 reviewContent' = EntityFieldWrapper ReviewContent
 
 {-@ assume reviewScore' :: EntityFieldWrapper <
-    {\row viewer ->
-        IsPC viewer ||
-        (currentStage == PublicStage && isAuthor (entityKey viewer) (reviewPaper (entityVal row)))
-    }
+    {\row viewer -> PcOrAuthorIfPublic row viewer}
   , {\row field -> field == reviewScore (entityVal row)}
   , {\field row -> field == reviewScore (entityVal row)}
   > _ _
