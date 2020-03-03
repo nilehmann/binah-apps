@@ -95,6 +95,15 @@ userId' = EntityFieldWrapper UserId
   }
 @-}
 
+{-@ assume wishId' :: EntityFieldWrapper <
+    {\row viewer -> True }
+  , {\row field -> field == entityKey row}
+  , {\field row -> field == entityKey row}
+  > _ _
+@-}
+wishId' :: EntityFieldWrapper Wish WishId
+wishId' = EntityFieldWrapper WishId
+
 {-@ assume wishAccessLevel' :: EntityFieldWrapper <
     {\row viewer -> True }
   , {\row field -> field == wishAccessLevel (entityVal row)}
@@ -136,20 +145,20 @@ wishDescription' = EntityFieldWrapper WishDescription
 
 {-@ invariant {v: Entity Friendship | friends (friendshipUser1 (entityVal v)) (friendshipUser2 (entityVal v))}@-}
 
-{-@ assume friendsUser1' :: EntityFieldWrapper <
+{-@ assume friendshipUser1' :: EntityFieldWrapper <
     {\row viewer -> True}
   , {\row field -> field == friendshipUser1 (entityVal row)}
   , {\field row -> field == friendshipUser1 (entityVal row)}
   > _ _
 @-}
-friendsUser1' :: EntityFieldWrapper Friendship UserId
-friendsUser1' = EntityFieldWrapper FriendshipUser1
+friendshipUser1' :: EntityFieldWrapper Friendship UserId
+friendshipUser1' = EntityFieldWrapper FriendshipUser1
 
-{-@ assume friendsUser2' :: EntityFieldWrapper <
+{-@ assume friendshipUser2' :: EntityFieldWrapper <
     {\row viewer -> True}
   , {\row field -> field == friendshipUser2 (entityVal row)}
   , {\field row -> field == friendshipUser2 (entityVal row)}
   > _ _
 @-}
-friendsUser2' :: EntityFieldWrapper Friendship UserId
-friendsUser2' = EntityFieldWrapper FriendshipUser2
+friendshipUser2' :: EntityFieldWrapper Friendship UserId
+friendshipUser2' = EntityFieldWrapper FriendshipUser2

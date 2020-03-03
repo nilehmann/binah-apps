@@ -78,18 +78,8 @@ projectList :: (PersistEntity record, Applicative m) => EntityFieldWrapper recor
 projectList (EntityFieldWrapper entityField) entities = pure $ map (getConst . Persist.fieldLens entityField Const) entities
 
 {-@
-assume printTo :: user:_ -> _ -> TaggedT<{\_ -> True}, {\viewer -> entityKey viewer == entityKey user}> _ ()
+assume printTo :: user:_ -> _ -> TaggedT<{\_ -> True}, {\viewer -> viewer == user}> _ ()
 @-}
 printTo :: MonadTIO m => Entity User -> String -> TaggedT m ()
 printTo user str = liftTIO . TIO . putStrLn . mconcat $
   ["[", Text.unpack . userName . Persist.entityVal $ user, "] ", str]
-
-{-@
-assume printAll:: forall<p :: Entity User -> Bool>. [Entity<p> User] -> String -> TaggedT<{\_ -> True}, p> m ()
-@-}
-printAll :: MonadTIO m => [Entity User] -> String -> TaggedT m ()
-printAll [] str = returnTagged ()
-printAll (user:rest) str = do
-  liftTIO . TIO . putStrLn . mconcat $ ["[", Text.unpack . userName . Persist.entityVal $ user, "] ", str]
-  printAll rest str
-

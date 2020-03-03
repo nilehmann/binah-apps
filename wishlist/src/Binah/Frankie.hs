@@ -5,39 +5,53 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE PackageImports #-}
-module Binah.Frankie (MonadController(..), HasSqlBackend(..), reading, backend, respondTagged, requireAuthUser, httpAuthDb, module Frankie) where
+module Binah.Frankie
+  ( MonadController(..)
+  , HasSqlBackend(..)
+  , reading
+  , backend
+  , respondTagged
+  , requireAuthUser
+  , httpAuthDb
+  , parseForm
+  , module Frankie
+  )
+where
 
-import Control.Monad.Reader (MonadReader(..), ReaderT(..), withReaderT)
-import Data.Typeable (Typeable)
-import Control.Monad.Trans (MonadTrans(..))
-import Control.Exception (try)
-import Data.Text (Text)
-import Control.Monad ((>=>))
-import qualified Database.Persist as Persist
-import qualified Database.Persist.Sqlite as Persist
-import qualified Network.Wai as Wai
-import qualified Network.Wai.Handler.Warp as Wai
-import qualified Data.Text as Text
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as ByteString
-import qualified Data.ByteString.Base64 as Base64
-import Data.Either.Combinators (rightToMaybe)
-import qualified Data.Text.Encoding as Text
-import Data.Maybe (fromJust)
+import           Control.Monad.Reader           ( MonadReader(..)
+                                                , ReaderT(..)
+                                                , withReaderT
+                                                )
+import           Data.Typeable                  ( Typeable )
+import           Control.Monad.Trans            ( MonadTrans(..) )
+import           Control.Exception              ( try )
+import           Data.Text                      ( Text )
+import           Control.Monad                  ( (>=>) )
+import qualified Database.Persist              as Persist
+import qualified Database.Persist.Sqlite       as Persist
+import qualified Network.Wai                   as Wai
+import qualified Network.Wai.Handler.Warp      as Wai
+import qualified Network.Wai.Parse             as Wai
+import qualified Data.Text                     as Text
+import           Data.ByteString                ( ByteString )
+import qualified Data.ByteString               as ByteString
+import qualified Data.ByteString.Base64        as Base64
+import           Data.Either.Combinators        ( rightToMaybe )
+import qualified Data.Text.Encoding            as Text
+import           Data.Maybe                     ( fromJust )
 
-import Prelude hiding (log)
+import           Prelude                 hiding ( log )
 
-import Frankie
-import Frankie.Config
-import Frankie.Auth
+import           Frankie
+import           Frankie.Config
+import           Frankie.Auth
 
-import Binah.Core
-import Binah.Infrastructure
-import Binah.Filters
-import Binah.Actions
+import           Binah.Core
+import           Binah.Infrastructure
+import           Binah.Filters
+import           Binah.Actions
 
-import Model
+import           Model
 
 reading :: Monad m => m r -> ReaderT r m a -> m a
 reading r m = r >>= runReaderT m
@@ -84,9 +98,11 @@ backend = getSqlBackend <$> getConfig
 
 {-@ ignore httpAuthDb @-}
 {-@ assume httpAuthDb :: AuthMethod {v:(Entity User) | v == currentUser} (TaggedT<{\_ -> True}, {\_ -> False}> m)@-}
-httpAuthDb :: (MonadController w m, MonadConfig config m, HasSqlBackend config, MonadTIO m) => AuthMethod (Entity User) (TaggedT m)
+httpAuthDb
+  :: (MonadController w m, MonadConfig config m, HasSqlBackend config, MonadTIO m)
+  => AuthMethod (Entity User) (TaggedT m)
 httpAuthDb = httpBasicAuth $ \username _password ->
-  mapTaggedT (reading backend) $ selectFirst (EntityFieldWrapper UserName ==. username)
+  mapTaggedT (reading backend) $ selectFirst (EntityFieldWrapper UserUsername ==. username)
 
 instance WebMonad TIO where
   data Request TIO = RequestTIO { unRequestTIO :: Wai.Request }
@@ -96,14 +112,16 @@ instance WebMonad TIO where
   reqQueryString = Wai.queryString . unRequestTIO
   reqHeaders     = Wai.requestHeaders . unRequestTIO
   reqBody        = TIO . Wai.strictRequestBody . unRequestTIO
-  tryWeb act     = do er <- (TIO . try . runTIO) act
-                      case er of
-                        Left e -> return . Left . toException $ e
-                        r -> return r
+  tryWeb act = do
+    er <- (TIO . try . runTIO) act
+    case er of
+      Left e -> return . Left . toException $ e
+      r      -> return r
   server port hostPref app =
-    let settings = Wai.setHost hostPref $ Wai.setPort port $
-                   Wai.setServerName "frankie" Wai.defaultSettings
-    in Wai.runSettings settings $ toWaiApplication app
+    let settings = Wai.setHost hostPref $ Wai.setPort port $ Wai.setServerName
+          "frankie"
+          Wai.defaultSettings
+    in  Wai.runSettings settings $ toWaiApplication app
 
 instance MonadTIO m => MonadTIO (ControllerT m) where
   liftTIO = lift . liftTIO
@@ -112,14 +130,20 @@ toWaiApplication :: Application TIO -> Wai.Application
 toWaiApplication app wReq wRespond = do
   resp <- runTIO $ app req
   wRespond $ toWaiResponse resp
-    where req :: Request TIO
-          req = RequestTIO $ wReq { Wai.pathInfo = trimPath $ Wai.pathInfo wReq }
-          toWaiResponse :: Response -> Wai.Response
-          toWaiResponse (Response status headers body) = Wai.responseLBS status headers body
+ where
+  req :: Request TIO
+  req = RequestTIO $ wReq { Wai.pathInfo = trimPath $ Wai.pathInfo wReq }
+  toWaiResponse :: Response -> Wai.Response
+  toWaiResponse (Response status headers body) = Wai.responseLBS status headers body
 
 {-@ ignore trimPath @-}
 trimPath :: [Text] -> [Text]
-trimPath path =
-  if (not . null $ path) && Text.null (last path)
-  then init path
-  else path
+trimPath path = if (not . null $ path) && Text.null (last path) then init path else path
+
+{-@ ignore parseForm @-}
+{-@ assume parseForm :: TaggedT<{\_ -> True}, {\_ -> False}> _ _ @-}
+parseForm :: (MonadController TIO m, MonadTIO m) => TaggedT m [Wai.Param]
+parseForm = do
+  req    <- request
+  parsed <- liftTIO . TIO $ Wai.parseRequestBody Wai.lbsBackEnd $ unRequestTIO req
+  return $ fst parsed
