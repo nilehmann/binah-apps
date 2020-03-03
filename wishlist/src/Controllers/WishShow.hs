@@ -7,6 +7,7 @@ module Controllers.WishShow where
 import           Database.Persist.Sql           ( toSqlKey )
 import           Data.Int                       ( Int64 )
 import           Data.Text                      ( Text )
+import           Data.Text.Encoding             ( decodeUtf8 )
 import           Text.Mustache                  ( (~>)
                                                 , ToMustache(..)
                                                 )
@@ -15,6 +16,7 @@ import           Frankie
 
 import           Binah.Core
 import           Binah.Actions
+import           Binah.Updates
 import           Binah.Filters
 import           Binah.Helpers
 import           Binah.Infrastructure
@@ -35,11 +37,28 @@ instance TemplateData WishData where
 instance ToMustache WishData where
   toMustache (WishData description) = Mustache.object ["description" ~> description]
 
+-- If I inline this function LH goes crazy
+updateDescr :: WishId -> Text -> Controller()
+updateDescr id desc = update id (wishDescription' `assign` desc)
+
+updateWish id = do
+  req <- request
+  if reqMethod req == methodPost
+    then do
+      params <- parseForm
+      case lookup "description" params of
+        Just content -> updateDescr id (decodeUtf8 content)
+        Nothing -> return ()
+    else return ()
+
 {-@ wishShow :: WishId -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
 wishShow :: WishId -> Controller ()
 wishShow wishId = do
   viewer    <- requireAuthUser
   viewerId  <- project userId' viewer
+
+  updateWish wishId
+
   maybeWish <- selectFirst (wishId' ==. wishId)
   wish      <- case maybeWish of
     Just wish -> return wish
