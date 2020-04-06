@@ -1,0 +1,29 @@
+predicate friends :: UserId -> UserId -> Bool
+
+User
+  name Text
+  username Text
+
+Wish
+  owner UserId
+  description Text @PublicOrFriends
+  accessLevel String
+
+Friendship
+  user1 UserId
+  user2 UserId
+
+  assert [friends user1 user2]
+
+-- policy PublicOrFriends = \wish viewer ->
+--    wishAccessLevel (entityVal wish) == "public" ||
+--    wishOwner (entityVal wish) == entityKey viewer ||
+--    (wishAccessLevel (entityVal wish) == "friends"
+--      && friends (wishOwner (entityVal wish)) (entityKey viewer))
+
+policy PublicOrFriends = \wish viewer ->
+   wishAccessLevel wish == "public" ||
+   wishOwner wish == entityKey viewer ||
+   (wishAccessLevel wish == "friends"
+     && friends (wishOwner wish) (entityKey viewer))
+
