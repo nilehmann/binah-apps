@@ -370,5 +370,3 @@ data Stage = SubmitStage | ReviewStage | PublicStage deriving Eq
 {-@ inline currentStage @-}
 currentStage :: Stage
 currentStage = ReviewStage
-
-data A = C {a::Int} | B

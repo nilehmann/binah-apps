@@ -8,7 +8,7 @@ User
 Paper
   author UserId @PcOrAuthorOrAccepted
   title Text    @PcOrAuthorOrAccepted
-  abstract Text @PcOrAuthorOrAccepted
+  abstract Text @PcOrAuthorOrAccepted 
   accepted Bool @PcOrPublic
 
   assert [isAuthor author entityKey]

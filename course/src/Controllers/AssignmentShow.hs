@@ -51,7 +51,7 @@ assignmentShow aid = do
   courseId   <- project assignmentCourse' assignment
 
   enrollment <- selectFirst
-    (studentCourseStudent' ==. viewerId &&: studentCourseCourse' ==. courseId)
+    (enrollmentStudent' ==. viewerId &&: enrollmentCourse' ==. courseId)
   instruction <- selectFirst
     (courseInstructorInstructor' ==. viewerId &&: courseInstructorCourse' ==. courseId)
   description <- case (enrollment, instruction) of

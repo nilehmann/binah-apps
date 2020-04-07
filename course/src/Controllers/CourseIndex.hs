@@ -60,7 +60,7 @@ courseIndex :: Controller ()
 courseIndex = do
   viewer         <- requireAuthUser
   viewerId       <- project userId' viewer
-  enrollments    <- selectList (studentCourseStudent' ==. viewerId)
-  gradesByCourse <- projectList2 (studentCourseCourse', studentCourseGrade') enrollments
+  enrollments    <- selectList (enrollmentStudent' ==. viewerId)
+  gradesByCourse <- projectList2 (enrollmentCourse', enrollmentGrade') enrollments
   courses        <- joinWithCourses gradesByCourse
   respondHtml (CourseIndex courses)
