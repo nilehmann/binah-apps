@@ -41,6 +41,7 @@ data EntityFieldWrapper record typ < policy :: Entity record -> Entity User -> B
                                    , flippedselector :: typ -> Entity record -> Bool
                                    > = EntityFieldWrapper _
 @-}
+
 data EntityFieldWrapper record typ = EntityFieldWrapper (Persist.EntityField record typ)
 {-@ data variance EntityFieldWrapper covariant covariant invariant invariant invariant @-}
 
@@ -67,6 +68,8 @@ data EntityFieldWrapper record typ = EntityFieldWrapper (Persist.EntityField rec
   , userUsername :: _
   }
 @-}
+
+
 
 {-@ assume userId' :: EntityFieldWrapper <
     {\row viewer -> True}
@@ -103,6 +106,8 @@ userUsername' = EntityFieldWrapper UserUsername
   , wishAccessLevel :: _
   }
 @-}
+
+
 
 {-@ assume wishId' :: EntityFieldWrapper <
     {\row viewer -> True}

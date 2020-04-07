@@ -63,7 +63,7 @@ joinWithAuthors papersByAuthor = do
     papersByAuthor
     authorsById
 
-{-@ getAllPapers :: TaggedT<{\u -> IsPC u}, {\_ -> False}> _ _ @-}
+{-@ getAllPapers :: TaggedT<{\u -> IsPc u}, {\_ -> False}> _ _ @-}
 getAllPapers :: Controller [RowData]
 getAllPapers = do
   papers    <- selectList trueF

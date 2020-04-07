@@ -54,7 +54,7 @@ instance ToMustache PaperData where
 
 {-@ getReviews ::
   p: _ ->
-  TaggedT<{\v -> IsPC v ||
+  TaggedT<{\v -> IsPc v ||
                  (currentStage == PublicStage && isAuthor (entityKey v) (entityKey p))},
           {\_ -> False}> _ _ @-}
 getReviews :: Entity Paper -> Controller [ReviewData]

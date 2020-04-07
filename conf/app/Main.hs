@@ -15,6 +15,7 @@ import           Frankie
 import           Frankie.Config
 
 import           Binah.Filters
+import           Binah.Updates
 import           Binah.Infrastructure
 import           Binah.Frankie
 import           Controllers
@@ -70,7 +71,7 @@ main = Sqlite.runSqlite ":memory:" $ do
       initWith $ configure cfg . reading backend . unTag
     dispatch $ do
       get "/"              home
-      get "/papers"       paperIndex
+      get "/papers"        paperIndex
       get "/papers/:pid"   paperShow
       get "/profiles/:uid" profileShow
       fallback $ respond notFound

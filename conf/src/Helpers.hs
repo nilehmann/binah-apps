@@ -20,7 +20,7 @@ import           Binah.Frankie
 import           Model
 import           Controllers
 
-{-@ pc :: u: Entity User -> TaggedT<{\_ -> True}, {\_ -> False}> _ {v: Bool | v <=> IsPC u} @-}
+{-@ pc :: u: Entity User -> TaggedT<{\_ -> True}, {\_ -> False}> _ {v: Bool | v <=> IsPc u} @-}
 pc :: Monad m => Entity User -> TaggedT m Bool
 pc user = do
   level <- project userLevel' user

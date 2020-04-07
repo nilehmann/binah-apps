@@ -1,0 +1,69 @@
+User
+  username Text
+  name Text
+  email Text @ChairOrSelf
+  affiliation Text
+  level String
+
+Paper
+  author UserId @PcOrAuthorOrAccepted
+  title Text    @PcOrAuthorOrAccepted
+  abstract Text @PcOrAuthorOrAccepted
+  accepted Bool @PcOrPublic
+
+  assert [isAuthor author entityKey]
+  assert [accepted => isAccepted entityKey]
+
+PaperCoauthor
+  paper PaperId @PcOrAuthorOrAccepted'
+  author Text   @PcOrAuthorOrAccepted'
+
+ReviewAssignment
+  paper PaperId   @OnlyPc
+  user UserId     @OnlyPc
+  assignType Text @OnlyPc
+
+Review
+  paper PaperId   @PcOrAuthorIfPublic
+  reviewer UserId @OnlyPc
+  content Text    @PcOrAuthorIfPublic
+  score Int       @PcOrAuthorIfPublic
+
+predicate isAuthor   :: UserId -> PaperId -> Bool
+
+predicate isAccepted :: PaperId -> Bool
+
+policy IsChair = \user -> userLevel user == "chair"
+
+policy IsPc = \user -> userLevel user == "pc" || userLevel user == "chair"
+
+policy ChairOrSelf = \user viewer ->
+  IsChair viewer || entityKey viewer == entityKey user
+
+policy PcOrPublic = \row viewer ->
+  IsPc viewer || currentStage == PublicStage
+
+policy PcOrAuthorOrAccepted = \paper viewer ->
+  IsPc viewer ||
+  isAuthor (entityKey viewer) (entityKey paper) ||
+  (currentStage == PublicStage && paperAccepted paper)
+
+policy PcOrAuthorOrAccepted' = \coauthor viewer ->
+  IsPc viewer ||
+  isAuthor (entityKey viewer) (paperCoauthorPaper coauthor) ||
+  (currentStage == PublicStage && isAccepted (paperCoauthorPaper coauthor))
+
+policy OnlyPc = \row viewer -> IsPc viewer
+
+policy PcOrAuthorIfPublic = \review viewer -> 
+    IsPc viewer ||
+    (currentStage == PublicStage &&
+      isAuthor (entityKey viewer) (reviewPaper review))
+
+#inline
+{-@ data Stage = SubmitStage | ReviewStage | PublicStage @-}
+data Stage = SubmitStage | ReviewStage | PublicStage deriving Eq
+
+{-@ inline currentStage @-}
+currentStage :: Stage
+currentStage = ReviewStage

@@ -10,6 +10,7 @@ import Binah.Core
 import Binah.Infrastructure
 import Model
 
+
 {-@ newtype Update record <visibility :: Entity record -> Entity User -> Bool, update :: Entity record -> Bool> = Update _ @-}
 newtype Update record = Update [Persist.Update record]
 {-@ data variance Update invariant invariant invariant @-}
