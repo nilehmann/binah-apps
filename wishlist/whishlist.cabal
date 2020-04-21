@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f5a1cc9af4e8c2beb6cafd03dc0daf760313ed13685b5fea2a7429c9e611f2d7
+-- hash: 780e394c55b8ad6e298dae389355cae4a6f099b222c50eba76915f6826f88843
 
 name:           whishlist
 version:        0.1.0.0
@@ -33,14 +33,16 @@ library
       Binah.Frankie
       Binah.Helpers
       Binah.Infrastructure
+      Binah.Insert
       Binah.Templates
       Binah.Updates
       Controllers
-      Controllers.WishIndex
-      Controllers.WishShow
+      Controllers.User
+      Controllers.Wish
       Helpers
       Lib
       Model
+      Server
   other-modules:
       Paths_whishlist
   hs-source-dirs:

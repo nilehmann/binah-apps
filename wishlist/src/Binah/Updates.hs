@@ -1,14 +1,18 @@
 {-# LANGUAGE GADTs #-}
 
+{-@ LIQUID "--no-pattern-inline" @-}
+
 module Binah.Updates where
 
-import Control.Monad.Reader
-import Database.Persist (PersistRecordBackend, PersistField)
-import qualified Database.Persist as Persist
+import           Control.Monad.Reader
+import           Database.Persist               ( PersistRecordBackend
+                                                , PersistField
+                                                )
+import qualified Database.Persist              as Persist
 
-import Binah.Core
-import Binah.Infrastructure
-import Model
+import           Binah.Core
+import           Binah.Infrastructure
+import           Model
 
 {-@ newtype Update record <visibility :: Entity record -> Entity User -> Bool, update :: Entity record -> Bool> = Update _ @-}
 newtype Update record = Update [Persist.Update record]
@@ -62,6 +66,7 @@ combineUpdates (Update us1) (Update us2) = Update (us1 ++ us2)
 
 
 -- TODO: Figure out what to do with the key
+{-@ ignore update @-}
 {-@
 assume update :: forall <visibility :: Entity record -> Entity User -> Bool,
                          update :: Entity record -> Bool,
@@ -69,6 +74,15 @@ assume update :: forall <visibility :: Entity record -> Entity User -> Bool,
   { row :: (Entity <update> record) |- {v:(Entity <visibility row> User) | True} <: {v:(Entity <audience> User) | True} }
   key:(Key record) -> Update<visibility, update> record -> TaggedT<{\_ -> True}, audience> m ()
 @-}
-update :: (MonadTIO m, PersistRecordBackend record backend, MonadReader backend m) =>
-          Key record -> Update record -> TaggedT m ()
-update = undefined
+update
+  :: ( MonadTIO m
+     , Persist.PersistStoreWrite backend
+     , Persist.PersistRecordBackend record backend
+     , MonadReader backend m
+     )
+  => Key record
+  -> Update record
+  -> TaggedT m ()
+update key (Update up) = do
+  backend <- ask
+  liftTIO . TIO $ runReaderT (Persist.update key up) backend

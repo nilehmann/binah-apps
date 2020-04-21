@@ -1,9 +1,8 @@
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE ScopedTypeVariables, TypeApplications, AllowAmbiguousTypes #-}
+{-# LANGUAGE ScopedTypeVariables, AllowAmbiguousTypes #-}
 
 module Binah.Templates
-  ( TemplateData(..)
-  , HasTemplateCache(..)
+  ( HasTemplateCache(..)
   , renderTemplate
   )
 where
@@ -23,9 +22,6 @@ import           Binah.Infrastructure
 import           Binah.Filters
 import           Binah.Frankie
 
-class Mustache.ToMustache d => TemplateData d where
-  templateFile :: FilePath
-
 class HasTemplateCache config where
   getTemplateCache :: config -> MVar Mustache.TemplateCache
 
@@ -40,41 +36,29 @@ getOrLoadTemplate searchDirs file = do
   oldCache  <- liftTIO $ TIO (readMVar cacheMVar)
   case HashMap.lookup file oldCache of
     Just template -> pure template
-    Nothing ->
-      liftTIO
-        $   TIO
-        $   Mustache.compileTemplateWithCache searchDirs oldCache file
-        >>= \case
-              Right template ->
-                let updatedCache = HashMap.insert
-                      (Mustache.name template)
-                      template
-                      (Mustache.partials template)
-                in  do
-                      modifyMVar_
-                        cacheMVar
-                        (\currentCache ->
-                          evaluate $ currentCache <> updatedCache
-                        )
-                      pure template
-              Left err ->
-                error $ "Error parsing template " ++ file ++ ": " ++ show err
+    Nothing -> liftTIO $ TIO $ Mustache.compileTemplateWithCache searchDirs oldCache file >>= \case
+      Right template ->
+        let updatedCache =
+                HashMap.insert (Mustache.name template) template (Mustache.partials template)
+        in  do
+              modifyMVar_ cacheMVar (\currentCache -> evaluate $ currentCache <> updatedCache)
+              pure template
+      Left err -> error $ "Error parsing template " ++ file ++ ": " ++ show err
 
-{-@ assume renderTemplate :: _ -> TaggedT<{\_ -> True}, {\_ -> False}> _ _ @-}
+{-@ assume renderTemplate :: _ -> _ -> TaggedT<{\_ -> True}, {\_ -> False}> _ _ @-}
 {-@ ignore renderTemplate @-}
 renderTemplate
   :: forall d w m config
    . ( MonadController w m
      , MonadTIO m
      , MonadConfig config m
-     , TemplateData d
+     , Mustache.ToMustache d
      , HasTemplateCache config
      )
-  => d
+  => FilePath
+  -> d
   -> TaggedT m Text
-renderTemplate templateData = do
-  template <- getOrLoadTemplate searchDirs file
+renderTemplate path templateData = do
+  template <- getOrLoadTemplate searchDirs path
   pure $ Mustache.substitute template templateData
- where
-  file       = templateFile @d
-  searchDirs = ["templates"]
+  where searchDirs = ["templates"]

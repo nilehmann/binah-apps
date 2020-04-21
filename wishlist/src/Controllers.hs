@@ -21,6 +21,7 @@ import           Binah.Frankie
 import           Binah.Infrastructure
 import           Binah.Templates
 import           Binah.Filters
+import           Binah.Actions
 import           Model
 
 data Config = Config
@@ -40,8 +41,8 @@ instance HasSqlBackend Config where
 instance HasAuthMethod (Entity User) Controller Config where
   getAuthMethod = configAuthMethod
 
-{-@ respondHtml :: _ -> TaggedT<{\_ -> True}, {\v -> v == currentUser}> _ _ @-}
-respondHtml :: TemplateData a => a -> Controller b
-respondHtml d = do
-  page <- renderTemplate d
+{-@ respondHtml :: _ -> _ -> TaggedT<{\_ -> True}, {\v -> v == currentUser}> _ _ @-}
+respondHtml :: Mustache.ToMustache d => FilePath -> d -> Controller b
+respondHtml path d = do
+  page <- renderTemplate path d
   respondTagged . okHtml . ByteString.fromStrict . encodeUtf8 $ page

@@ -38,7 +38,9 @@ import qualified Data.ByteString               as ByteString
 import qualified Data.ByteString.Base64        as Base64
 import           Data.Either.Combinators        ( rightToMaybe )
 import qualified Data.Text.Encoding            as Text
+import           Data.Text.Encoding             ( decodeUtf8 )
 import           Data.Maybe                     ( fromJust )
+import           Data.Bifunctor                 ( bimap )
 
 import           Prelude                 hiding ( log )
 
@@ -140,10 +142,8 @@ toWaiApplication app wReq wRespond = do
 trimPath :: [Text] -> [Text]
 trimPath path = if (not . null $ path) && Text.null (last path) then init path else path
 
-{-@ ignore parseForm @-}
-{-@ assume parseForm :: TaggedT<{\_ -> True}, {\_ -> False}> _ _ @-}
-parseForm :: (MonadController TIO m, MonadTIO m) => TaggedT m [Wai.Param]
+parseForm :: (MonadController TIO m, MonadTIO m) => m [(Text, Text)]
 parseForm = do
   req    <- request
   parsed <- liftTIO . TIO $ Wai.parseRequestBody Wai.lbsBackEnd $ unRequestTIO req
-  return $ fst parsed
+  return $ map (bimap decodeUtf8 decodeUtf8) (fst parsed)
