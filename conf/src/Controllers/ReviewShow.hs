@@ -27,36 +27,29 @@ import           Model
 
 import           Helpers
 import           Controllers
+import           Control.Monad                  ( when )
 
 data ReviewData = ReviewData { reviewDataScore :: Int, reviewDataContent :: Text}
-
-instance TemplateData ReviewData where
-  templateFile = "review.show.html.mustache"
 
 instance ToMustache ReviewData where
   toMustache (ReviewData score content) =
     Mustache.object ["score" ~> toMustache score, "content" ~> toMustache content]
 
--- If I inline these functions LH goes crazy
-updateContent :: ReviewId -> Text -> Controller ()
-updateContent id content = update id (reviewContent' `assign` content)
-updateScore :: ReviewId -> Int -> Controller ()
-updateScore id score = update id (reviewScore' `assign` score)
 
 updateReview :: ReviewId -> Controller ()
 updateReview reviewId = do
   viewer <- requireAuthUser
   isPC   <- pc viewer
 
-  if not isPC || currentStage /= ReviewStage then respondTagged forbidden else return ()
+  when (not isPC || currentStage /= ReviewStage) (respondTagged forbidden)
 
   params <- parseForm
   case lookup "content" params of
-    Just content -> updateContent reviewId (decodeUtf8 content)
+    Just content -> update reviewId (reviewContent' `assign` content)
     Nothing      -> return ()
 
   case lookup "score" params of
-    Just score -> updateScore reviewId (read . show . decodeUtf8 $ score)
+    Just score -> update reviewId (reviewScore' `assign` read (show score))
     Nothing    -> return ()
 
 {-@ reviewShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
@@ -67,7 +60,8 @@ reviewShow rid = do
   viewerId <- project userId' viewer
 
   req      <- request
-  if reqMethod req == methodPost then updateReview reviewId else return ()
+
+  when (reqMethod req == methodPost) (updateReview reviewId)
 
   maybeReview <- selectFirst (reviewId' ==. reviewId)
   review      <- case maybeReview of
@@ -78,14 +72,14 @@ reviewShow rid = do
   case (isPC, currentStage) of
     (True, _) -> do
       reviewData <- project2 (reviewScore', reviewContent') review
-      respondHtml (uncurry ReviewData reviewData)
+      respondHtml "review.show.html.mustache" (uncurry ReviewData reviewData)
     (_, PublicStage) -> do
       paperId <- project reviewPaper' review
       paper   <- selectFirst (paperId' ==. paperId &&: paperAuthor' ==. viewerId)
       case paper of
         Just _ -> do
           reviewData <- project2 (reviewScore', reviewContent') review
-          respondHtml (uncurry ReviewData reviewData)
+          respondHtml "review.show.html.mustache" (uncurry ReviewData reviewData)
         Nothing -> return ()
     _ -> return ()
 

@@ -28,9 +28,6 @@ import           Controllers
 
 data PaperIndex = PaperIndex [RowData]
 
-instance TemplateData PaperIndex where
-  templateFile = "paper.index.html.mustache"
-
 instance ToMustache PaperIndex where
   toMustache (PaperIndex papers) = Mustache.object ["papers" ~> map toMustache papers]
 
@@ -105,4 +102,4 @@ paperIndex = do
     (PublicStage, _   ) -> getAcceptedPapers
     (_          , True) -> getAllPapers
     _                   -> getMyPapers viewer
-  respondHtml (PaperIndex papers)
+  respondHtml "paper.index.html.mustache" (PaperIndex papers)

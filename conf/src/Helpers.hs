@@ -10,7 +10,6 @@ import           Database.Persist.Sql           ( fromSqlKey
                                                 , ToBackendKey
                                                 , SqlBackend
                                                 )
-
 import           Binah.Core
 import           Binah.Actions
 import           Binah.Filters

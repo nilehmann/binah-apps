@@ -369,4 +369,5 @@ data Stage = SubmitStage | ReviewStage | PublicStage deriving Eq
 
 {-@ inline currentStage @-}
 currentStage :: Stage
-currentStage = ReviewStage
+currentStage = SubmitStage
+

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en-US">
+    <head>
+        <title>Binah Conference Manager</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <div style="text-align: center;">
+            <form action="{{action}}" method="POST">
+            <label for="title">Title: </label>
+            <textarea id="title" name="title" >{{paper.title}}</textarea>
+            <br/>
+            <label for="abstract">Abstract: </label>
+            <textarea id="abstract" name="abstract">{{paper.abstract}}</textarea>
+            <br/>
+            <input type="submit" value="Submit">
+            </form>
+        </div>
+    </body>
+</html>

@@ -4,13 +4,15 @@
 
 module Binah.Infrastructure where
 
-import Control.Monad.Trans.Class (MonadTrans(..))
-import Control.Monad.IO.Class (MonadIO(..))
-import Control.Monad.Reader (MonadReader(..), ReaderT(..))
-import Data.Functor.Identity (Identity)
+import           Control.Monad.Trans.Class      ( MonadTrans(..) )
+import           Control.Monad.IO.Class         ( MonadIO(..) )
+import           Control.Monad.Reader           ( MonadReader(..)
+                                                , ReaderT(..)
+                                                )
+import           Data.Functor.Identity          ( Identity )
 
-import Binah.Core
-import Model
+import           Binah.Core
+import           Model
 
 -- * Definitions
 data TIO a = TIO { runTIO :: IO a }
@@ -117,6 +119,6 @@ instance MonadTrans TaggedT where
   lift = liftTaggedT
 
 instance MonadReader r m => MonadReader r (TaggedT m) where
-  ask = lift ask
-  local = mapTaggedT . local
+  ask    = lift ask
+  local  = mapTaggedT . local
   reader = lift . reader

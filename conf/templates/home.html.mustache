@@ -6,10 +6,18 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
     </head>
     <body>
-        <center>
-        <h1>Tired of conference managers that leak your papers to your competitors?</h1>
-        <h1>Welcome to the Binah Conference Manager</h1>
-        <span>No leaks. Guaranteed!</span>
-        </center>
+        <div style="text-align: center;">
+            <h1>Tired of conference managers leaking your results to the competition?</h1>
+            <h2>Welcome to the Binah Conference Manager</h2>
+            <h1>No leaks. Guaranteed!</h1>
+            <br/>
+            <br/>
+            <h1>My Papers</h1>
+            <a href="/paper">Add new paper</a>
+            {{#papers}}
+            <br/>
+            <a href="/paper/{{paperId}}">#{{paperId}} {{title}}</a>
+            {{/papers}}
+        </div>
     </body>
 </html>

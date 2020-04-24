@@ -26,9 +26,6 @@ import           Controllers
 
 data ProfileData = ProfileData { name :: Text, affiliation:: Text,  email :: Maybe Text }
 
-instance TemplateData ProfileData where
-  templateFile = "profile.html.mustache"
-
 instance ToMustache ProfileData where
   toMustache (ProfileData name affiliation email) = Mustache.object
     [ "name" ~> toMustache name
@@ -40,18 +37,18 @@ instance ToMustache ProfileData where
 profileShow :: Int64 -> Controller ()
 profileShow uid = do
   let userId = toSqlKey uid
-  viewer <- requireAuthUser
-  viewerId <- project userId' viewer
+  viewer    <- requireAuthUser
+  viewerId  <- project userId' viewer
   maybeUser <- selectFirst (userId' ==. userId)
-  user <- case maybeUser of
-    Nothing -> respondTagged notFound
+  user      <- case maybeUser of
+    Nothing   -> respondTagged notFound
     Just user -> return user
-  name <- project userName' user
+  name        <- project userName' user
   affiliation <- project userAffiliation' user
-  isChair <- chair viewer
-  email <- if isChair || viewerId == userId
+  isChair     <- chair viewer
+  email       <- if isChair || viewerId == userId
     then do
-       email <- project userEmail' user
-       return (Just email)
+      email <- project userEmail' user
+      return (Just email)
     else return Nothing
-  respondHtml (ProfileData name affiliation email)
+  respondHtml "profile.html.mustache" (ProfileData name affiliation email)

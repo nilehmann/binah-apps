@@ -1,63 +1,54 @@
-name:                conf
-version:             0.1.0.0
-github:              "nilehmann/conf"
-license:             BSD3
-author:              "Nico Lehmann"
-maintainer:          "nlehmann@eng.ucsd.edu"
-copyright:           "2019 Nico Lehmann"
-
-extra-source-files:
-- README.md
-- ChangeLog.md
-
-# Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
-
-# To avoid duplicated efforts in documentation and dealing with the
-# complications of embedding Haddock markup inside cabal files, it is
-# common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/nilehmann/conf#readme>
-
-dependencies:
-- base >= 4.7 && < 5
-- base64-bytestring
-- bytestring
-- either
-- frankie
-- mtl
-- mustache
-- persistent
-- persistent-template
-- persistent-sqlite
-- text
-- transformers
-- unordered-containers
-- wai
-- wai-extra
-- warp
-
 library:
   source-dirs: src
-
-executables:
-  conf-exe:
-    main:                Main.hs
-    source-dirs:         app
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - conf
-
 tests:
   conf-test:
-    main:                Spec.hs
-    source-dirs:         test
+    source-dirs: test
+    main: Spec.hs
     ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
     dependencies:
-    - conf
+      - conf
+copyright: 2019 Nico Lehmann
+maintainer: nlehmann@eng.ucsd.edu
+dependencies:
+  - base >= 4.7 && < 5
+  - base64-bytestring
+  - bytestring
+  - either
+  - frankie
+  - mtl
+  - mustache
+  - persistent
+  - persistent-template
+  - persistent-sqlite
+  - monad-control
+  - monad-logger
+  - resource-pool
+  - text
+  - transformers
+  - transformers-base
+  - unordered-containers
+  - wai
+  - wai-extra
+  - warp
+name: conf
+version: 0.1.0.0
+extra-source-files:
+  - README.md
+  - ChangeLog.md
+author: Nico Lehmann
+github: nilehmann/conf
+license: BSD3
+executables:
+  conf-exe:
+    source-dirs: app
+    main: Main.hs
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - conf
+description: Please see the README on GitHub at <https://github.com/nilehmann/conf#readme>
