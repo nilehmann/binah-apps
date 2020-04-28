@@ -7,19 +7,24 @@
     </head>
     <body>
         <div style="text-align: center;">
-            {{#paper}}
             <h1>{{title}}</h1>
             {{#authors}}
             <div>{{.}}</div>
             {{/authors}}
             <p>{{abstract}}</p>
-            <a href="/paper/{{id}}/edit">Edit</a>
-            {{/paper}}
+
+            <form action="{{action}}" method="POST">
+                <select name="reviewer">
+                    {{#pcs}}
+                    <option value={{id}}>{{name}}</option>
+                    {{/pcs}}
+                </select>
+                <input type="submit" value="Assign"/>
+            </form>
             {{#reviews}}
             <h1>Reviews</h1>
                 {{#reviews}}
-                 <div>{{score}}</div>
-                 <div>{{content}}</div>
+                <span>{{reviewer}}</span>
                 {{/reviews}}
             {{/reviews}}
         </div>

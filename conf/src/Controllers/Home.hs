@@ -23,12 +23,15 @@ import           Model
 
 import           Controllers
 import           Database.Persist.Sql           ( fromSqlKey )
+import           Control.Monad                  ( when )
 
-data HomeAuthor = HomeAuthor [PaperData]
+data Home = HomeAuthor [PaperData] | HomeChair [PaperData]
 
-instance ToMustache HomeAuthor where
-  toMustache (HomeAuthor papers) = Mustache.object ["papers" ~> papers]
-
+instance ToMustache Home where
+  toMustache (HomeAuthor papers) = Mustache.object
+    ["title" ~> ("My Paper" :: String), "prefix" ~> ("" :: String), "papers" ~> papers]
+  toMustache (HomeChair papers) = Mustache.object
+    ["title" ~> ("Papers" :: String), "prefix" ~> ("/chair" :: String), "papers" ~> papers]
 
 instance ToMustache PaperData where
   toMustache (PaperData paperId paperTitle) =
@@ -47,3 +50,16 @@ homeAuthor = do
   papers    <- selectList (paperAuthor' ==. viewerId)
   paperData <- projectList2 (paperId', paperTitle') papers
   respondHtml "home.html.mustache" (HomeAuthor (map (uncurry PaperData) paperData))
+
+{-@ homeChair :: TaggedT<{\_ -> False}, {\_ -> True}> _ _@-}
+homeChair :: Controller ()
+homeChair = do
+  viewer <- requireAuthUser
+  level  <- project userLevel' viewer
+  if level /= "chair"
+    then respondTagged forbidden
+    else do
+      papers    <- selectList trueF
+      paperData <- projectList2 (paperId', paperTitle') papers
+      respondHtml "home.html.mustache" (HomeChair (map (uncurry PaperData) paperData))
+

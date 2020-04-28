@@ -9,12 +9,16 @@
         <div style="text-align: center;">
             <form action="{{action}}" method="POST">
             <label for="title">Title: </label>
-            <textarea id="title" name="title" >{{paper.title}}</textarea>
+            <br/>
+            <textarea id="title" name="title" rows="2" cols="80">{{paper.title}}</textarea>
+            <br/>
             <br/>
             <label for="abstract">Abstract: </label>
-            <textarea id="abstract" name="abstract">{{paper.abstract}}</textarea>
             <br/>
-            <input type="submit" value="Submit">
+            <textarea id="abstract" name="abstract" rows="20" cols="80">{{paper.abstract}}</textarea>
+            <br/>
+            <br/>
+            <input type="submit" value="Save">
             </form>
         </div>
     </body>

@@ -6,6 +6,7 @@
 
 module Server
     ( runServer
+    , initDB
     )
 where
 
@@ -61,34 +62,20 @@ runServer = runNoLoggingT $ do
             get "/paper/:pid"      paperShow
             get "/paper/:pid/edit" paperEdit
             post "/paper/:pid/edit" paperEdit
+
+            get "/chair" homeChair
+
             fallback $ respond notFound
 
 
 initDB :: IO ()
 initDB = runSqlite "db.sqlite" $ do
     runMigration migrateAll
-    Persistent.insert (User "nico" "Nico Lehmann" "nlehmann@ucsd.edu" "ucsd" "author")
+    Persistent.insert (User "nadia" "Nadia Polikarpova" "npolikarpova@ucsd.edu" "ucsd" "chair")
+    Persistent.insert (User "ranjit" "Ranjit Jhala" "npolikarpova@ucsd.edu" "ucsd" "pc")
+    Persistent.insert (User "rose" "Rose Kunkel" "rkunkel@ucsd.edu" "ucsd" "author")
 
     return ()
-
-
--- runServer :: IO ()
--- runServer = runSqlite "db.sqlite" $ do
---     cfg <- setup
---     liftIO . runFrankieServer "dev" $ do
---         mode "dev" $ do
---             host "localhost"
---             port 3000
---             initWith $ configure cfg . reading backend . unTag
---         dispatch $ do
---             get "/"      homeAuthor
---             get "/paper" paperNew
---             post "/paper" paperNew
---             get "/paper/:pid"      paperShow
---             get "/paper/:pid/edit" paperEdit
---             post "/paper/:pid/edit" paperEdit
---             fallback $ respond notFound
-
 
 -- TODO find a way to provide this without exposing the instance of MonadBaseControl
 

@@ -43,12 +43,11 @@ getOrLoadTemplate searchDirs file = do
   case HashMap.lookup file oldCache of
     Just template -> pure template
     Nothing -> liftTIO $ TIO $ Mustache.compileTemplateWithCache searchDirs oldCache file >>= \case
-      Right template ->
-        let updatedCache =
-                HashMap.insert (Mustache.name template) template (Mustache.partials template)
-        in  do
-              modifyMVar_ cacheMVar (\currentCache -> evaluate $ currentCache <> updatedCache)
-              pure template
+      Right template -> do
+        -- let updatedCache =
+        --       HashMap.insert (Mustache.name template) template (Mustache.partials template)
+        -- modifyMVar_ cacheMVar (\currentCache -> evaluate $ currentCache <> updatedCache)
+        pure template
       Left err -> error $ "Error parsing template " ++ file ++ ": " ++ show err
 
 {-@ assume renderTemplate :: _ -> _ -> TaggedT<{\_ -> True}, {\_ -> False}> _ _ @-}

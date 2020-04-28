@@ -38,65 +38,52 @@ import           Helpers
 import           Controllers
 import           Control.Monad                  ( when )
 
-data PaperNew = PaperNew
 
-instance ToMustache PaperNew where
-  toMustache PaperNew = Mustache.object ["action" ~> ("/paper" :: String)]
+-- | paper.show.html.mustache
 
-data PaperEdit = PaperEdit PaperId PaperData
+data PaperShow = PaperShow PaperData [AnonymousReview]
+
+instance ToMustache PaperShow where
+  toMustache (PaperShow paperData reviews) =
+    Mustache.object ["paper" ~> paperData, "reviews" ~> reviews]
+
+-- | paper.edit.html.mustache
+
+data PaperEdit = PaperNew | PaperEdit PaperId PaperData
 
 instance ToMustache PaperEdit where
+  toMustache PaperNew = Mustache.object ["action" ~> ("/paper" :: String)]
   toMustache (PaperEdit id paper) =
     Mustache.object ["action" ~> paperEditRoute id, "paper" ~> paper]
 
-data ReviewData = ReviewData { reviewDataScore :: Int, reviewDataContent :: Text}
+-- | paper.chair.html.mustache
+
+newtype PaperChair = PaperChair PaperData
+
+instance ToMustache PaperChair where
+  toMustache (PaperChair paperData) = undefined
+
+data AnonymousReview = AnonymousReview { reviewDataScore :: Int, reviewDataContent :: Text}
 
 data PaperData = PaperData
   { paperDataId :: PaperId
   , paperDataTitle :: Text
   , paperDataAbstract :: Text
   , paperDataAuthors :: [Text]
-  , reviews :: [ReviewData]
   }
 
-
-instance ToMustache ReviewData where
-  toMustache (ReviewData score content) = Mustache.object ["score" ~> score, "content" ~> content]
+instance ToMustache AnonymousReview where
+  toMustache (AnonymousReview score content) =
+    Mustache.object ["score" ~> score, "content" ~> content]
 
 instance ToMustache PaperData where
-  toMustache (PaperData id title abstract authors reviews) = Mustache.object
-    [ "id" ~> id
-    , "title" ~> title
-    , "abstract" ~> abstract
-    , "authors" ~> authors
-    , "reviews" ~> reviews
-    ]
+  toMustache (PaperData id title abstract authors) =
+    Mustache.object ["id" ~> id, "title" ~> title, "abstract" ~> abstract, "authors" ~> authors]
 
-{-@ getReviews ::
-  p: _ ->
-  TaggedT<{\v -> IsPc v ||
-                 (currentStage == PublicStage && isAuthor (entityKey v) (entityKey p))},
-          {\_ -> False}> _ _ @-}
-getReviews :: Entity Paper -> Controller [ReviewData]
-getReviews paper = do
-  paperId     <- project paperId' paper
-  reviews     <- selectList (reviewPaper' ==. paperId)
-  reviewsData <- projectList2 (reviewScore', reviewContent') reviews
-  return $ map (uncurry ReviewData) reviewsData
 
-{-@ getAuthors :: p: _ -> TaggedT<{\u -> PcOrAuthorOrAccepted p u}, {\_ -> False}> _ _ @-}
-getAuthors :: Entity Paper -> Controller [Text]
-getAuthors paper = do
-  (paperId, authorId) <- project2 (paperId', paperAuthor') paper
-
-  author              <- selectList (userId' ==. authorId)
-  authors             <- projectList userName' author
-
-  coauthors           <- selectList (paperCoauthorPaper' ==. paperId)
-  coauthorNames       <- projectList paperCoauthorAuthor' coauthors
-
-  return $ authors ++ coauthorNames
-
+------------------------------------------------------------------------------------------------
+-- | Show Paper
+------------------------------------------------------------------------------------------------
 
 {-@ paperShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
 paperShow :: Int64 -> Controller ()
@@ -109,7 +96,7 @@ paperShow pid = do
   myPaper  <- getMyPaper viewerId paperId
   case myPaper of
     Nothing        -> return ()
-    Just paperData -> respondHtml "paper.show.html.mustache" paperData
+    Just paperData -> respondHtml "paper.show.html.mustache" (uncurry PaperShow paperData)
 
   paper             <- selectFirstOr404 (paperId' ==. paperId)
   isPC              <- pc viewer
@@ -123,7 +110,8 @@ paperShow pid = do
         if accepted then project2 (paperTitle', paperAbstract') paper else return ("", "")
       else return ("", "")
 
-  respondHtml "paper.show.html.mustache" $ PaperData paperId title abstract authors reviews
+  respondHtml "paper.show.html.mustache"
+    $ PaperShow (PaperData paperId title abstract authors) reviews
 
 ------------------------------------------------------------------------------------------------
 -- | Edit Paper
@@ -136,11 +124,15 @@ paperEdit pid = do
   viewer   <- requireAuthUser
   viewerId <- project userId' viewer
   req      <- request
-  when (reqMethod req == methodPost) (updatePaper paperId)
-  maybePaper <- getMyPaper viewerId paperId
-  case maybePaper of
-    Nothing        -> respondTagged notFound
-    Just paperData -> respondHtml "paper.edit.html.mustache" (PaperEdit paperId paperData)
+  if reqMethod req == methodPost
+    then do
+      updatePaper paperId
+      respondTagged (redirectTo (paperRoute paperId))
+    else do
+      maybePaper <- getMyPaper viewerId paperId
+      case maybePaper of
+        Nothing             -> respondTagged notFound
+        Just (paperData, _) -> respondHtml "paper.edit.html.mustache" (PaperEdit paperId paperData)
 
 {-@ updatePaper :: _ -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ @-}
 updatePaper :: PaperId -> Controller ()
@@ -189,12 +181,11 @@ insertPaper authorId = do
 
 
 ------------------------------------------------------------------------------------------------
--- | Misc
+-- | Helpers
 ------------------------------------------------------------------------------------------------
 
-
 {-@ getMyPaper :: u:_ -> _ -> TaggedT<{\v -> entityKey v == u}, {\_ -> False}> _ _ @-}
-getMyPaper :: UserId -> PaperId -> Controller (Maybe PaperData)
+getMyPaper :: UserId -> PaperId -> Controller (Maybe (PaperData, [AnonymousReview]))
 getMyPaper userId paperId = do
   maybePaper <- selectFirst (paperId' ==. paperId &&: paperAuthor' ==. userId)
   case maybePaper of
@@ -203,7 +194,34 @@ getMyPaper userId paperId = do
       authors           <- getAuthors paper
       reviews           <- if currentStage == PublicStage then getReviews paper else return []
       (title, abstract) <- project2 (paperTitle', paperAbstract') paper
-      return . Just $ PaperData paperId title abstract authors reviews
+      return . Just $ (PaperData paperId title abstract authors, reviews)
+
+
+{-@ getReviews ::
+  p: _ ->
+  TaggedT<{\v -> IsPc v ||
+                 (currentStage == PublicStage && isAuthor (entityKey v) (entityKey p))},
+          {\_ -> False}> _ _ @-}
+getReviews :: Entity Paper -> Controller [AnonymousReview]
+getReviews paper = do
+  paperId     <- project paperId' paper
+  reviews     <- selectList (reviewPaper' ==. paperId)
+  reviewsData <- projectList2 (reviewScore', reviewContent') reviews
+  return $ map (uncurry AnonymousReview) reviewsData
+
+
+{-@ getAuthors :: p: _ -> TaggedT<{\u -> PcOrAuthorOrAccepted p u}, {\_ -> False}> _ _ @-}
+getAuthors :: Entity Paper -> Controller [Text]
+getAuthors paper = do
+  (paperId, authorId) <- project2 (paperId', paperAuthor') paper
+
+  author              <- selectList (userId' ==. authorId)
+  authors             <- projectList userName' author
+
+  coauthors           <- selectList (paperCoauthorPaper' ==. paperId)
+  coauthorNames       <- projectList paperCoauthorAuthor' coauthors
+
+  return $ authors ++ coauthorNames
 
 
 paperRoute :: PaperId -> ByteString
@@ -211,6 +229,7 @@ paperRoute paperId = encodeUtf8 (Text.pack path)
  where
   pid  = fromSqlKey paperId
   path = printf "/paper/%d" pid
+
 
 paperEditRoute :: PaperId -> String
 paperEditRoute paperId = printf "/paper/%d/edit" (fromSqlKey paperId)
