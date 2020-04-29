@@ -27,7 +27,9 @@ import           Control.Monad                  ( when )
 
 data Home = HomeAuthor [PaperData] | HomeChair [PaperData]
 
-instance ToMustache Home where
+instance TemplateData Home where
+  templateFile = "home.html.mustache"
+
   toMustache (HomeAuthor papers) = Mustache.object
     ["title" ~> ("My Paper" :: String), "prefix" ~> ("" :: String), "papers" ~> papers]
   toMustache (HomeChair papers) = Mustache.object
@@ -49,7 +51,7 @@ homeAuthor = do
   viewerId  <- project userId' viewer
   papers    <- selectList (paperAuthor' ==. viewerId)
   paperData <- projectList2 (paperId', paperTitle') papers
-  respondHtml "home.html.mustache" (HomeAuthor (map (uncurry PaperData) paperData))
+  respondHtml $ HomeAuthor (map (uncurry PaperData) paperData)
 
 {-@ homeChair :: TaggedT<{\_ -> False}, {\_ -> True}> _ _@-}
 homeChair :: Controller ()
@@ -61,5 +63,5 @@ homeChair = do
     else do
       papers    <- selectList trueF
       paperData <- projectList2 (paperId', paperTitle') papers
-      respondHtml "home.html.mustache" (HomeChair (map (uncurry PaperData) paperData))
+      respondHtml $ HomeChair (map (uncurry PaperData) paperData)
 

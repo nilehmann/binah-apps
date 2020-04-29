@@ -26,12 +26,11 @@ import           Controllers
 
 data ProfileData = ProfileData { name :: Text, affiliation:: Text,  email :: Maybe Text }
 
-instance ToMustache ProfileData where
-  toMustache (ProfileData name affiliation email) = Mustache.object
-    [ "name" ~> toMustache name
-    , "affiliation" ~> toMustache affiliation
-    , "email" ~> toMustache email
-    ]
+instance TemplateData ProfileData where
+  templateFile = "profile.html.mustache"
+
+  toMustache (ProfileData name affiliation email) =
+    Mustache.object ["name" ~> name, "affiliation" ~> affiliation, "email" ~> email]
 
 {-@ profileShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
 profileShow :: Int64 -> Controller ()
@@ -51,4 +50,4 @@ profileShow uid = do
       email <- project userEmail' user
       return (Just email)
     else return Nothing
-  respondHtml "profile.html.mustache" (ProfileData name affiliation email)
+  respondHtml $ ProfileData name affiliation email

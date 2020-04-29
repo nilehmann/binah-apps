@@ -31,9 +31,10 @@ import           Control.Monad                  ( when )
 
 data ReviewData = ReviewData { reviewDataScore :: Int, reviewDataContent :: Text}
 
-instance ToMustache ReviewData where
-  toMustache (ReviewData score content) =
-    Mustache.object ["score" ~> toMustache score, "content" ~> toMustache content]
+instance TemplateData ReviewData where
+  templateFile = "review.show.html.mustache"
+
+  toMustache (ReviewData score content) = Mustache.object ["score" ~> score, "content" ~> content]
 
 
 updateReview :: ReviewId -> Controller ()
@@ -72,14 +73,14 @@ reviewShow rid = do
   case (isPC, currentStage) of
     (True, _) -> do
       reviewData <- project2 (reviewScore', reviewContent') review
-      respondHtml "review.show.html.mustache" (uncurry ReviewData reviewData)
+      respondHtml $ uncurry ReviewData reviewData
     (_, PublicStage) -> do
       paperId <- project reviewPaper' review
       paper   <- selectFirst (paperId' ==. paperId &&: paperAuthor' ==. viewerId)
       case paper of
         Just _ -> do
           reviewData <- project2 (reviewScore', reviewContent') review
-          respondHtml "review.show.html.mustache" (uncurry ReviewData reviewData)
+          respondHtml $ uncurry ReviewData reviewData
         Nothing -> return ()
     _ -> return ()
 

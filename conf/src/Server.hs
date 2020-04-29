@@ -63,7 +63,9 @@ runServer = runNoLoggingT $ do
             get "/paper/:pid/edit" paperEdit
             post "/paper/:pid/edit" paperEdit
 
-            get "/chair" homeChair
+            get "/chair"            homeChair
+            get "/chair/paper/:pid" paperChair
+            post "/chair/paper/:pid" paperChair
 
             fallback $ respond notFound
 

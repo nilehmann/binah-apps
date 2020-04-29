@@ -15,11 +15,13 @@ import           Data.Int                       ( Int64 )
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as Text
 import           Data.ByteString                ( ByteString )
+import           Data.Functor                   ( (<&>) )
 import           Text.Mustache                  ( (~>)
                                                 , ToMustache(..)
                                                 )
 import qualified Text.Mustache.Types           as Mustache
 import           Text.Printf                    ( printf )
+import           Text.Read                      ( readMaybe )
 import           Frankie
 
 
@@ -39,51 +41,18 @@ import           Controllers
 import           Control.Monad                  ( when )
 
 
--- | paper.show.html.mustache
-
-data PaperShow = PaperShow PaperData [AnonymousReview]
-
-instance ToMustache PaperShow where
-  toMustache (PaperShow paperData reviews) =
-    Mustache.object ["paper" ~> paperData, "reviews" ~> reviews]
-
--- | paper.edit.html.mustache
-
-data PaperEdit = PaperNew | PaperEdit PaperId PaperData
-
-instance ToMustache PaperEdit where
-  toMustache PaperNew = Mustache.object ["action" ~> ("/paper" :: String)]
-  toMustache (PaperEdit id paper) =
-    Mustache.object ["action" ~> paperEditRoute id, "paper" ~> paper]
-
--- | paper.chair.html.mustache
-
-newtype PaperChair = PaperChair PaperData
-
-instance ToMustache PaperChair where
-  toMustache (PaperChair paperData) = undefined
-
-data AnonymousReview = AnonymousReview { reviewDataScore :: Int, reviewDataContent :: Text}
-
-data PaperData = PaperData
-  { paperDataId :: PaperId
-  , paperDataTitle :: Text
-  , paperDataAbstract :: Text
-  , paperDataAuthors :: [Text]
-  }
-
-instance ToMustache AnonymousReview where
-  toMustache (AnonymousReview score content) =
-    Mustache.object ["score" ~> score, "content" ~> content]
-
-instance ToMustache PaperData where
-  toMustache (PaperData id title abstract authors) =
-    Mustache.object ["id" ~> id, "title" ~> title, "abstract" ~> abstract, "authors" ~> authors]
-
-
 ------------------------------------------------------------------------------------------------
 -- | Show Paper
 ------------------------------------------------------------------------------------------------
+
+data PaperShow = PaperShow PaperData [AnonymousReview]
+
+instance TemplateData PaperShow where
+  templateFile = "paper.show.html.mustache"
+
+  toMustache (PaperShow paperData reviews) =
+    Mustache.object ["paper" ~> paperData, "reviews" ~> reviews]
+
 
 {-@ paperShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
 paperShow :: Int64 -> Controller ()
@@ -96,7 +65,7 @@ paperShow pid = do
   myPaper  <- getMyPaper viewerId paperId
   case myPaper of
     Nothing        -> return ()
-    Just paperData -> respondHtml "paper.show.html.mustache" (uncurry PaperShow paperData)
+    Just paperData -> respondHtml $ uncurry PaperShow paperData
 
   paper             <- selectFirstOr404 (paperId' ==. paperId)
   isPC              <- pc viewer
@@ -110,12 +79,22 @@ paperShow pid = do
         if accepted then project2 (paperTitle', paperAbstract') paper else return ("", "")
       else return ("", "")
 
-  respondHtml "paper.show.html.mustache"
-    $ PaperShow (PaperData paperId title abstract authors) reviews
+  respondHtml $ PaperShow (PaperData paperId title abstract authors) reviews
+
 
 ------------------------------------------------------------------------------------------------
 -- | Edit Paper
 ------------------------------------------------------------------------------------------------
+
+data PaperEdit = PaperNew | PaperEdit PaperId PaperData
+
+instance TemplateData PaperEdit where
+  templateFile = "paper.edit.html.mustache"
+
+  toMustache PaperNew = Mustache.object ["action" ~> ("/paper" :: String)]
+  toMustache (PaperEdit id paper) =
+    Mustache.object ["action" ~> paperEditRoute id, "paper" ~> paper]
+
 
 {-@ paperEdit :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
 paperEdit :: Int64 -> Controller ()
@@ -132,7 +111,7 @@ paperEdit pid = do
       maybePaper <- getMyPaper viewerId paperId
       case maybePaper of
         Nothing             -> respondTagged notFound
-        Just (paperData, _) -> respondHtml "paper.edit.html.mustache" (PaperEdit paperId paperData)
+        Just (paperData, _) -> respondHtml $ PaperEdit paperId paperData
 
 {-@ updatePaper :: _ -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ @-}
 updatePaper :: PaperId -> Controller ()
@@ -161,9 +140,7 @@ paperNew = do
   viewer   <- requireAuthUser
   viewerId <- project userId' viewer
   req      <- request
-  if reqMethod req == methodPost
-    then insertPaper viewerId
-    else respondHtml "paper.edit.html.mustache" PaperNew
+  if reqMethod req == methodPost then insertPaper viewerId else respondHtml PaperNew
 
 {-@ insertPaper :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
 insertPaper :: UserId -> Controller ()
@@ -178,7 +155,64 @@ insertPaper authorId = do
       respondTagged (redirectTo (paperRoute paperId))
     _ -> respondTagged badRequest
 
+------------------------------------------------------------------------------------------------
+-- | Show Paper (Chair View)
+------------------------------------------------------------------------------------------------
 
+data PaperChair = PaperChair PaperData [UserData] [Text]
+
+instance TemplateData PaperChair where
+  templateFile = "paper.chair.html.mustache"
+
+  toMustache (PaperChair paper pcs reviewers) = Mustache.object
+    [ "action" ~> ("" :: String)
+    , "paper" ~> paper
+    , "pcs" ~> pcs
+    , "reviews" ~> map toReview reviewers
+    ]
+    where toReview reviewer = Mustache.object ["reviewer" ~> reviewer]
+
+data UserData = UserData {userDataId :: UserId, userDataName :: Text}
+
+instance ToMustache UserData where
+  toMustache (UserData id name) = Mustache.object ["id" ~> id, "name" ~> name]
+
+{-@ paperNew :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
+paperChair :: Int64 -> Controller ()
+paperChair pid = do
+  let paperId = toSqlKey pid
+  viewer   <- requireAuthUser
+  viewerId <- project userId' viewer
+  req      <- request
+  when (reqMethod req == methodPost) (assignReviewer paperId)
+
+  paper     <- getPaper paperId
+  -- TODO: we should filter pcs that are already reviewers here
+  pcs       <- selectList (userLevel' ==. "pc")
+  pcsData   <- projectList2 (userId', userName') pcs
+  reviewers <- getReviewers paperId
+  respondHtml $ PaperChair paper (map (uncurry UserData) pcsData) reviewers
+
+assignReviewer :: PaperId -> Controller ()
+assignReviewer paperId = do
+  params <- parseForm
+  case lookup "reviewer" params <&> Text.unpack >>= readMaybe <&> toSqlKey of
+    Nothing     -> respondTagged badRequest
+    Just userId -> do
+      -- ENFORCE: userId should be a pc && phase should be review
+      -- ENFORCE: should we enforce unique constraints here?
+      insert (ReviewAssignment paperId userId "")
+      return ()
+
+
+
+{-@ getReviewers :: _ -> TaggedT<{\v -> IsChair v}, {\_ -> False}> _ _ @-}
+getReviewers :: PaperId -> Controller [Text]
+getReviewers paperId = do
+  assignments <- selectList (reviewAssignmentPaper' ==. paperId)
+  reviewerIds <- projectList reviewAssignmentUser' assignments
+  reviewers   <- selectList (userId' <-. reviewerIds)
+  projectList userName' reviewers
 
 ------------------------------------------------------------------------------------------------
 -- | Helpers
@@ -195,6 +229,14 @@ getMyPaper userId paperId = do
       reviews           <- if currentStage == PublicStage then getReviews paper else return []
       (title, abstract) <- project2 (paperTitle', paperAbstract') paper
       return . Just $ (PaperData paperId title abstract authors, reviews)
+
+{-@ getPaper :: _ -> TaggedT<{\v -> IsPc v}, {\_ -> False}> _ _ @-}
+getPaper :: PaperId -> Controller PaperData
+getPaper paperId = do
+  paper             <- selectFirstOr404 (paperId' ==. paperId)
+  authors           <- getAuthors paper
+  (title, abstract) <- project2 (paperTitle', paperAbstract') paper
+  return $ (PaperData paperId title abstract authors)
 
 
 {-@ getReviews ::
@@ -233,3 +275,20 @@ paperRoute paperId = encodeUtf8 (Text.pack path)
 
 paperEditRoute :: PaperId -> String
 paperEditRoute paperId = printf "/paper/%d/edit" (fromSqlKey paperId)
+
+data AnonymousReview = AnonymousReview { reviewDataScore :: Int, reviewDataContent :: Text}
+
+data PaperData = PaperData
+  { paperDataId :: PaperId
+  , paperDataTitle :: Text
+  , paperDataAbstract :: Text
+  , paperDataAuthors :: [Text]
+  }
+
+instance ToMustache AnonymousReview where
+  toMustache (AnonymousReview score content) =
+    Mustache.object ["score" ~> score, "content" ~> content]
+
+instance ToMustache PaperData where
+  toMustache (PaperData id title abstract authors) =
+    Mustache.object ["id" ~> id, "title" ~> title, "abstract" ~> abstract, "authors" ~> authors]

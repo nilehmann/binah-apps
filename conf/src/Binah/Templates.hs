@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables, AllowAmbiguousTypes #-}
@@ -5,6 +6,7 @@
 
 module Binah.Templates
   ( HasTemplateCache(..)
+  , TemplateData(..)
   , renderTemplate
   )
 where
@@ -27,6 +29,10 @@ import           Database.Persist.Sql           ( fromSqlKey
 import           Binah.Infrastructure
 import           Binah.Filters
 import           Binah.Frankie
+
+class TemplateData d where
+  templateFile :: FilePath
+  toMustache :: d -> Mustache.Value
 
 class HasTemplateCache config where
   getTemplateCache :: config -> MVar Mustache.TemplateCache
@@ -57,16 +63,18 @@ renderTemplate
    . ( MonadController w m
      , MonadTIO m
      , MonadConfig config m
-     , Mustache.ToMustache d
+     , TemplateData d
      , HasTemplateCache config
      )
-  => FilePath
-  -> d
+  => d
   -> TaggedT m Text
-renderTemplate path templateData = do
-  template <- getOrLoadTemplate searchDirs path
-  pure $ Mustache.substitute template templateData
-  where searchDirs = ["templates"]
+renderTemplate templateData = do
+  template <- getOrLoadTemplate searchDirs file
+  pure $ Mustache.substitute template (toMustache templateData)
+ where
+  searchDirs = ["templates"]
+  file       = templateFile @d
+
 
 instance Persist.ToBackendKey SqlBackend record => Mustache.ToMustache (Persist.Key record) where
   toMustache id = Mustache.toMustache (show (fromSqlKey id))

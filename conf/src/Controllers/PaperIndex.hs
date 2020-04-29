@@ -26,23 +26,24 @@ import           Helpers
 import           Controllers
 
 
-data PaperIndex = PaperIndex [RowData]
+newtype PaperIndex = PaperIndex [RowData]
 
-instance ToMustache PaperIndex where
-  toMustache (PaperIndex papers) = Mustache.object ["papers" ~> map toMustache papers]
+instance TemplateData PaperIndex where
+  templateFile = "paper.index.html.mustache"
+  toMustache (PaperIndex papers) = Mustache.object ["papers" ~> papers]
 
 data RowData = RowData
   { paperDataAuthorId :: Maybe UserId
   , paperDataAuthor :: Maybe Text
-  ,  paperDataId :: PaperId
+  , paperDataId :: PaperId
   , paperDataTitle :: Text
   }
 
 instance ToMustache RowData where
   toMustache (RowData authorId authorName paperId paperTitle) = Mustache.object
-    [ "paper_id" ~> toMustache (keyToText paperId)
-    , "author_id" ~> toMustache (fmap keyToText authorId)
-    , "title" ~> toMustache paperTitle
+    [ "paper_id" ~> paperId
+    , "author_id" ~> authorId
+    , "title" ~> paperTitle
     , "author_name" ~> authorName
     ]
 
@@ -102,4 +103,4 @@ paperIndex = do
     (PublicStage, _   ) -> getAcceptedPapers
     (_          , True) -> getAllPapers
     _                   -> getMyPapers viewer
-  respondHtml "paper.index.html.mustache" (PaperIndex papers)
+  respondHtml (PaperIndex papers)

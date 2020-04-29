@@ -44,6 +44,3 @@ innerJoinBy xsKey ysKey f xs ys =
 
 innerJoin :: Eq a => (a -> b -> c -> d) -> [(a, b)] -> [(a, c)] -> [d]
 innerJoin f = innerJoinBy fst fst (\x y -> f (fst x) (snd x) (snd y))
-
-keyToText :: ToBackendKey SqlBackend record => Key record -> Text
-keyToText key = pack . show $ fromSqlKey key
