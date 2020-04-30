@@ -1,8 +1,10 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-@ LIQUID "--no-pattern-inline" @-}
 
 module Binah.Helpers where
 
+import           Control.Monad.Reader           ( MonadReader(..) )
 import           Data.Text                      ( Text
                                                 , pack
                                                 )
@@ -11,11 +13,13 @@ import           Database.Persist.Sql           ( fromSqlKey
                                                 , SqlBackend
                                                 )
 import           Database.Persist               ( PersistEntity )
+import qualified Database.Persist              as Persistent
 
 import           Binah.Actions
 import           Binah.Core
 import           Binah.Infrastructure
 import           Binah.Filters
+import           Binah.Frankie
 import           Model
 
 
@@ -168,3 +172,27 @@ projectList3 (field1, field2, field3) records = do
   fields2 <- projectList field2 records
   fields3 <- projectList field3 records
   returnTagged $ zip3 fields1 fields2 fields3
+
+{-@
+assume selectFirstOr404 :: forall < q  :: Entity record -> Entity User -> Bool
+                                  , r1 :: Entity record -> Bool 
+                                  , r2 :: Entity record -> Bool
+                                  , p  :: Entity User -> Bool>.
+  { row :: record |- {v:(Entity <r1> record) | entityVal v == row} <: {v:(Entity <r2> record) | True} }
+  { row :: (Entity <r2> record) |- {v:(Entity <p> User) | True} <: {v:(Entity <q row> User) | True} }
+  Filter<q, r1> record -> TaggedT<p, {\v -> v == currentUser}> _ (Entity <r2> record)
+@-}
+selectFirstOr404
+  :: ( Persistent.PersistQueryRead backend
+     , Persistent.PersistRecordBackend record backend
+     , MonadReader backend m
+     , MonadController w m
+     , MonadTIO m
+     )
+  => Filter record
+  -> TaggedT m (Entity record)
+selectFirstOr404 filters = do
+  maybeRecord <- selectFirst filters
+  case maybeRecord of
+    Just record -> return record
+    Nothing     -> respondTagged notFound

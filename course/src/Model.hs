@@ -46,7 +46,6 @@ Assignment
 
 Submission
   assignment AssignmentId
-  course CourseId
   author UserId
   content Text
   grade String
@@ -80,11 +79,13 @@ data EntityFieldWrapper record typ = EntityFieldWrapper (Persist.EntityField rec
 
 {-@ predicate EnrolledOrInstructor ASSIGNMENT VIEWER = isEnrolled (entityKey VIEWER) (assignmentCourse (entityVal ASSIGNMENT)) || isInstructor (entityKey VIEWER) (assignmentCourse (entityVal ASSIGNMENT)) @-}
 
-{-@ predicate AuthorOrInstructor SUBMISSION VIEWER = submissionAuthor (entityVal SUBMISSION) == entityKey VIEWER || isInstructor (entityKey VIEWER) (submissionCourse (entityVal SUBMISSION)) @-}
+{-@ predicate AuthorOrInstructor SUBMISSION VIEWER = submissionAuthor (entityVal SUBMISSION) == entityKey VIEWER || isInstructor (entityKey VIEWER) (assignmentCourse (entityVal (getJust (submissionAssignment (entityVal SUBMISSION))))) @-}
 
 --------------------------------------------------------------------------------
 -- | Records
 --------------------------------------------------------------------------------
+
+{-@ measure getJust :: Key record -> Entity record @-}
 
 -- * User
 
@@ -95,6 +96,8 @@ data EntityFieldWrapper record typ = EntityFieldWrapper (Persist.EntityField rec
   , userRole :: _
   }
 @-}
+
+{-@ invariant {v: Entity User | v == getJust (entityKey v)} @-}
 
 
 
@@ -150,6 +153,8 @@ userRole' = EntityFieldWrapper UserRole
   }
 @-}
 
+{-@ invariant {v: Entity Course | v == getJust (entityKey v)} @-}
+
 
 
 {-@ assume courseId' :: EntityFieldWrapper <
@@ -177,6 +182,8 @@ courseName' = EntityFieldWrapper CourseName
   , courseInstructorInstructor :: _
   }
 @-}
+
+{-@ invariant {v: Entity CourseInstructor | v == getJust (entityKey v)} @-}
 
 {-@ invariant {v: Entity CourseInstructor | isInstructor (courseInstructorInstructor (entityVal v)) (courseInstructorCourse (entityVal v))} @-}
 
@@ -215,6 +222,8 @@ courseInstructorInstructor' = EntityFieldWrapper CourseInstructorInstructor
   , enrollmentGrade :: _
   }
 @-}
+
+{-@ invariant {v: Entity Enrollment | v == getJust (entityKey v)} @-}
 
 {-@ invariant {v: Entity Enrollment | isEnrolled (enrollmentStudent (entityVal v)) (enrollmentCourse (entityVal v))} @-}
 
@@ -263,6 +272,8 @@ enrollmentGrade' = EntityFieldWrapper EnrollmentGrade
   }
 @-}
 
+{-@ invariant {v: Entity Assignment | v == getJust (entityKey v)} @-}
+
 
 
 {-@ assume assignmentId' :: EntityFieldWrapper <
@@ -305,12 +316,13 @@ assignmentDescription' = EntityFieldWrapper AssignmentDescription
 
 {-@ data Submission = Submission
   { submissionAssignment :: _
-  , submissionCourse :: _
   , submissionAuthor :: _
   , submissionContent :: _
   , submissionGrade :: _
   }
 @-}
+
+{-@ invariant {v: Entity Submission | v == getJust (entityKey v)} @-}
 
 
 
@@ -331,15 +343,6 @@ submissionId' = EntityFieldWrapper SubmissionId
 @-}
 submissionAssignment' :: EntityFieldWrapper Submission AssignmentId
 submissionAssignment' = EntityFieldWrapper SubmissionAssignment
-
-{-@ assume submissionCourse' :: EntityFieldWrapper <
-    {\row viewer -> True}
-  , {\row field  -> field == submissionCourse (entityVal row)}
-  , {\field row  -> field == submissionCourse (entityVal row)}
-  > _ _
-@-}
-submissionCourse' :: EntityFieldWrapper Submission CourseId
-submissionCourse' = EntityFieldWrapper SubmissionCourse
 
 {-@ assume submissionAuthor' :: EntityFieldWrapper <
     {\row viewer -> True}
@@ -367,7 +370,6 @@ submissionContent' = EntityFieldWrapper SubmissionContent
 @-}
 submissionGrade' :: EntityFieldWrapper Submission String
 submissionGrade' = EntityFieldWrapper SubmissionGrade
-
 
 --------------------------------------------------------------------------------
 -- | Inline

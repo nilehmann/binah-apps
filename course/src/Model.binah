@@ -30,7 +30,6 @@ Assignment
 
 Submission
   assignment AssignmentId
-  course CourseId
   author UserId
   content Text @AuthorOrInstructor
   grade String @AuthorOrInstructor
@@ -47,4 +46,6 @@ policy EnrolledOrInstructor = \assignment viewer ->
 
 policy AuthorOrInstructor = \submission viewer ->
   submissionAuthor submission == entityKey viewer ||
-  isInstructor (entityKey viewer) (submissionCourse submission)
+  isInstructor 
+    (entityKey viewer) 
+    (assignmentCourse (getJust (submissionAssignment submission)))

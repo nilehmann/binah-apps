@@ -61,16 +61,13 @@ submissionShow sid = do
         Nothing      -> returnTagged ()
     else returnTagged ()
 
-  maybeSubmission <- selectFirst (submissionId' ==. submissionId)
+  submission   <- selectFirstOr404 (submissionId' ==. submissionId)
+  assignmentId <- project submissionAssignment' submission
+  authorId     <- project submissionAuthor' submission
+  assignment   <- selectFirstOr404 (assignmentId' ==. assignmentId)
+  courseId     <- project assignmentCourse' assignment
 
-  submission      <- case maybeSubmission of
-    Just submission -> returnTagged submission
-    Nothing         -> respondTagged notFound
-
-  courseId    <- project submissionCourse' submission
-  authorId    <- project submissionAuthor' submission
-
-  instruction <- selectFirst
+  instruction  <- selectFirst
     (courseInstructorInstructor' ==. viewerId &&: courseInstructorCourse' ==. courseId)
 
   (content, grade) <- case (authorId == viewerId, instruction) of
