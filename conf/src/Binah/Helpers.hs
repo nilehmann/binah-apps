@@ -181,7 +181,7 @@ assume selectFirstOr404 :: forall < q  :: Entity record -> Entity User -> Bool
                                   , p :: Entity User -> Bool>.
   { row :: record |- {v:(Entity <r1> record) | entityVal v == row} <: {v:(Entity <r2> record) | True} }
   { row :: (Entity <r2> record) |- {v:(Entity <p> User) | True} <: {v:(Entity <q row> User) | True} }
-  Filter<q, r1> record -> TaggedT<p, {\_ -> False}> _ (Entity <r2> record)
+  Filter<q, r1> record -> TaggedT<p, {\v -> v == currentUser}> _ (Entity <r2> record)
 @-}
 selectFirstOr404
   :: ( DB.PersistQueryRead backend

@@ -177,7 +177,7 @@ data UserData = UserData {userDataId :: UserId, userDataName :: Text}
 instance ToMustache UserData where
   toMustache (UserData id name) = Mustache.object ["id" ~> id, "name" ~> name]
 
-{-@ paperNew :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
+{-@ paperChair :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
 paperChair :: Int64 -> Controller ()
 paperChair pid = do
   let paperId = toSqlKey pid
@@ -203,7 +203,6 @@ assignReviewer paperId = do
       -- ENFORCE: should we enforce unique constraints here?
       insert (ReviewAssignment paperId userId "")
       return ()
-
 
 
 {-@ getReviewers :: _ -> TaggedT<{\v -> IsChair v}, {\_ -> False}> _ _ @-}
