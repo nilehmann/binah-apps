@@ -14,11 +14,15 @@ import           Database.Persist.Sqlite        ( SqlBackend
                                                 , runMigration
                                                 )
 import           Frankie.Config
+import           Frankie.Auth
 import qualified Database.Persist              as Persistent
 
 import           Binah.Frankie
+import           Binah.Core
 import           Binah.Infrastructure
+import           Binah.Filters
 import           Binah.Insert
+import           Binah.Actions
 
 import           Controllers
 import           Controllers.Wish               ( wishNew
@@ -26,6 +30,7 @@ import           Controllers.Wish               ( wishNew
                                                 , wishEdit
                                                 )
 import           Controllers.User               ( userShow )
+
 import           Model
 
 
@@ -34,13 +39,17 @@ setup = do
     templateCache <- liftIO $ MVar.newMVar mempty
     runMigration migrateAll
 
-    Persistent.insert (User "Nico" "nico")
+    Persistent.insert (persistentRecord (mkUser "Nico" "nico"))
 
     backend <- ask
     return $ Config { configBackend       = backend
                     , configTemplateCache = templateCache
                     , configAuthMethod    = httpAuthDb
                     }
+
+{-@ ignore httpAuthDb @-}
+httpAuthDb :: AuthMethod (Entity User) Controller
+httpAuthDb = httpBasicAuth $ \username _password -> selectFirst (userName' ==. username)
 
 
 runServer :: IO ()

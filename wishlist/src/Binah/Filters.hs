@@ -2,11 +2,11 @@
 
 module Binah.Filters where
 
-import Database.Persist (PersistField)
-import qualified Database.Persist as Persist
+import           Database.Persist               ( PersistField )
+import qualified Database.Persist              as Persist
 
-import Binah.Core
-import Model
+import           Binah.Core
+import           Model
 
 -- * Data types
 {-@

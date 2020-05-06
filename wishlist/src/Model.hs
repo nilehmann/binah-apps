@@ -6,7 +6,33 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Model where
+module Model 
+  ( EntityFieldWrapper(..)
+  , migrateAll
+  , BinahRecord
+  , persistentRecord
+  , mkUser
+  , mkWish
+  , mkFriendship
+  , User
+  , Wish
+  , Friendship
+  , userId'
+  , userName'
+  , userUsername'
+  , wishId'
+  , wishOwner'
+  , wishDescription'
+  , wishAccessLevel'
+  , friendshipId'
+  , friendshipUser1'
+  , friendshipUser2'
+  , UserId
+  , WishId
+  , FriendshipId
+  )
+
+where
 
 import           Database.Persist               ( Key )
 import           Database.Persist.TH            ( share
@@ -61,13 +87,39 @@ data EntityFieldWrapper record typ = EntityFieldWrapper (Persist.EntityField rec
 -- | Records
 --------------------------------------------------------------------------------
 
+{-@ data BinahRecord record < 
+    p :: record -> Bool
+  , insertpolicy :: Entity record -> Entity User -> Bool
+  , querypolicy  :: Entity record -> Entity User -> Bool 
+  >
+  = BinahRecord _
+@-}
+data BinahRecord record = BinahRecord record
+{-@ data variance BinahRecord invariant invariant invariant invariant @-}
+
+{-@ persistentRecord :: BinahRecord record -> record @-}
+persistentRecord :: BinahRecord record -> record
+persistentRecord (BinahRecord record) = record
+
+{-@ measure getJust :: Key record -> Entity record @-}
+
 -- * User
 
-{-@ data User = User
-  { userName :: _
-  , userUsername :: _
-  }
+{-@ measure userName :: User -> Text @-}
+{-@ measure userUsername :: User -> Text @-}
+
+{-@ mkUser :: 
+     x_0: Text
+  -> x_1: Text
+  -> BinahRecord < 
+       {\row -> True}
+     , {\row viewer -> True}
+     , {\row viewer -> True}
+     > User
 @-}
+mkUser x_0 x_1 = BinahRecord (User x_0 x_1)
+
+{-@ invariant {v: Entity User | v == getJust (entityKey v)} @-}
 
 
 
@@ -100,12 +152,23 @@ userUsername' = EntityFieldWrapper UserUsername
 
 -- * Wish
 
-{-@ data Wish = Wish
-  { wishOwner :: _
-  , wishDescription :: _
-  , wishAccessLevel :: _
-  }
+{-@ measure wishOwner :: Wish -> UserId @-}
+{-@ measure wishDescription :: Wish -> Text @-}
+{-@ measure wishAccessLevel :: Wish -> String @-}
+
+{-@ mkWish :: 
+     x_0: UserId
+  -> x_1: Text
+  -> x_2: String
+  -> BinahRecord < 
+       {\row -> True}
+     , {\row viewer -> True}
+     , {\row viewer -> True}
+     > Wish
 @-}
+mkWish x_0 x_1 x_2 = BinahRecord (Wish x_0 x_1 x_2)
+
+{-@ invariant {v: Entity Wish | v == getJust (entityKey v)} @-}
 
 
 
@@ -147,11 +210,21 @@ wishAccessLevel' = EntityFieldWrapper WishAccessLevel
 
 -- * Friendship
 
-{-@ data Friendship = Friendship
-  { friendshipUser1 :: _
-  , friendshipUser2 :: _
-  }
+{-@ measure friendshipUser1 :: Friendship -> UserId @-}
+{-@ measure friendshipUser2 :: Friendship -> UserId @-}
+
+{-@ mkFriendship :: 
+     x_0: UserId
+  -> x_1: UserId
+  -> BinahRecord < 
+       {\row -> True}
+     , {\row viewer -> True}
+     , {\row viewer -> True}
+     > Friendship
 @-}
+mkFriendship x_0 x_1 = BinahRecord (Friendship x_0 x_1)
+
+{-@ invariant {v: Entity Friendship | v == getJust (entityKey v)} @-}
 
 {-@ invariant {v: Entity Friendship | friends (friendshipUser1 (entityVal v)) (friendshipUser2 (entityVal v))} @-}
 
@@ -181,3 +254,9 @@ friendshipUser1' = EntityFieldWrapper FriendshipUser1
 @-}
 friendshipUser2' :: EntityFieldWrapper Friendship UserId
 friendshipUser2' = EntityFieldWrapper FriendshipUser2
+
+--------------------------------------------------------------------------------
+-- | Inline
+--------------------------------------------------------------------------------
+
+

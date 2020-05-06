@@ -80,7 +80,7 @@ wishNew = do
     else respondHtml "wish.edit.html.mustache" (WishNew "/wish")
 
 
-{-@ insertWish :: UserId -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
+{-@ insertWish :: {v: UserId | v == entityKey currentUser} -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
 insertWish :: UserId -> Controller ()
 insertWish userId = do
   params <- parseForm
@@ -89,7 +89,7 @@ insertWish userId = do
   case (descr, accessLevel) of
     (Just descr, Just accessLevel) -> do
       -- ENFORCE: userId == viewerId
-      wishId <- insert (Wish userId descr accessLevel)
+      wishId <- insert (mkWish userId descr accessLevel)
       respondTagged (redirectTo (wishRoute wishId))
     _ -> respondTagged badRequest
 

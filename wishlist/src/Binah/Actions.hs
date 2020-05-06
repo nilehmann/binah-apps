@@ -41,6 +41,7 @@ selectList filters = do
   backend <- ask
   liftTIO . TIO $ runReaderT (Persist.selectList (toPersistFilters filters) []) backend
 
+
 {-@ ignore selectFirst @-}
 {-@
 assume selectFirst :: forall <q :: Entity record -> Entity User -> Bool, r1 :: Entity record -> Bool, r2 :: Entity record -> Bool, p :: Entity User -> Bool>.
@@ -113,9 +114,6 @@ projectList (EntityFieldWrapper entityField) entities =
 assume printTo :: user:_ -> _ -> TaggedT<{\_ -> True}, {\viewer -> viewer == user}> _ ()
 @-}
 printTo :: MonadTIO m => Entity User -> String -> TaggedT m ()
-printTo user str =
-  liftTIO
-    . TIO
-    . putStrLn
-    . mconcat
-    $ ["[", Text.unpack . userName . Persist.entityVal $ user, "] ", str]
+printTo user = liftTIO . TIO . putStrLn
+    -- . mconcat
+    -- $ ["[", Text.unpack . userName . Persist.entityVal $ user, "] ", str]

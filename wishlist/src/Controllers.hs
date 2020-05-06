@@ -30,6 +30,7 @@ data Config = Config
   , configAuthMethod :: !(AuthMethod (Entity User) Controller)
   }
 
+
 type Controller = TaggedT (ReaderT SqlBackend (ConfigT Config (ControllerT TIO)))
 
 instance HasTemplateCache Config where

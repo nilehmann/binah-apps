@@ -22,6 +22,8 @@ import           Binah.Infrastructure
 import           Binah.Filters
 import           Binah.Frankie
 
+import           Model
+
 class HasTemplateCache config where
   getTemplateCache :: config -> MVar Mustache.TemplateCache
 
