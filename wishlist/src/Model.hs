@@ -117,8 +117,8 @@ persistentRecord (BinahRecord record) = record
   -> x_1: Text
   -> BinahRecord < 
        {\row -> userName (entityVal row) == x_0 && userUsername (entityVal row) == x_1}
-     , {\row viewer -> True}
-     , {\row viewer -> True}
+     , {\_ _ -> True}
+     , {\row viewer -> False}
      > User
 @-}
 mkUser x_0 x_1 = BinahRecord (User x_0 x_1)
@@ -137,7 +137,7 @@ userId' :: EntityFieldWrapper User UserId
 userId' = EntityFieldWrapper UserId
 
 {-@ assume userName' :: EntityFieldWrapper <
-    {\row viewer -> True}
+    {\_ _ -> True}
   , {\row field  -> field == userName (entityVal row)}
   , {\field row  -> field == userName (entityVal row)}
   > _ _
@@ -146,7 +146,7 @@ userName' :: EntityFieldWrapper User Text
 userName' = EntityFieldWrapper UserName
 
 {-@ assume userUsername' :: EntityFieldWrapper <
-    {\row viewer -> True}
+    {\_ _ -> True}
   , {\row field  -> field == userUsername (entityVal row)}
   , {\field row  -> field == userUsername (entityVal row)}
   > _ _
@@ -167,7 +167,7 @@ userUsername' = EntityFieldWrapper UserUsername
   -> BinahRecord < 
        {\row -> wishOwner (entityVal row) == x_0 && wishDescription (entityVal row) == x_1 && wishAccessLevel (entityVal row) == x_2}
      , {\wish viewer -> wishOwner (entityVal wish) == entityKey viewer}
-     , {\row viewer -> True}
+     , {\row viewer -> (wishAccessLevel (entityVal row) == "public" || wishOwner (entityVal row) == entityKey viewer || (wishAccessLevel (entityVal row) == "friends" && friends (wishOwner (entityVal row)) (entityKey viewer)))}
      > Wish
 @-}
 mkWish x_0 x_1 x_2 = BinahRecord (Wish x_0 x_1 x_2)
@@ -186,7 +186,7 @@ wishId' :: EntityFieldWrapper Wish WishId
 wishId' = EntityFieldWrapper WishId
 
 {-@ assume wishOwner' :: EntityFieldWrapper <
-    {\row viewer -> True}
+    {\_ _ -> True}
   , {\row field  -> field == wishOwner (entityVal row)}
   , {\field row  -> field == wishOwner (entityVal row)}
   > _ _
@@ -204,7 +204,7 @@ wishDescription' :: EntityFieldWrapper Wish Text
 wishDescription' = EntityFieldWrapper WishDescription
 
 {-@ assume wishAccessLevel' :: EntityFieldWrapper <
-    {\row viewer -> True}
+    {\_ _ -> True}
   , {\row field  -> field == wishAccessLevel (entityVal row)}
   , {\field row  -> field == wishAccessLevel (entityVal row)}
   > _ _
@@ -222,8 +222,8 @@ wishAccessLevel' = EntityFieldWrapper WishAccessLevel
   -> x_1: UserId
   -> BinahRecord < 
        {\row -> friendshipUser1 (entityVal row) == x_0 && friendshipUser2 (entityVal row) == x_1}
-     , {\row viewer -> True}
-     , {\row viewer -> True}
+     , {\_ _ -> True}
+     , {\row viewer -> False}
      > Friendship
 @-}
 mkFriendship x_0 x_1 = BinahRecord (Friendship x_0 x_1)
@@ -242,7 +242,7 @@ friendshipId' :: EntityFieldWrapper Friendship FriendshipId
 friendshipId' = EntityFieldWrapper FriendshipId
 
 {-@ assume friendshipUser1' :: EntityFieldWrapper <
-    {\row viewer -> True}
+    {\_ _ -> True}
   , {\row field  -> field == friendshipUser1 (entityVal row)}
   , {\field row  -> field == friendshipUser1 (entityVal row)}
   > _ _
@@ -251,7 +251,7 @@ friendshipUser1' :: EntityFieldWrapper Friendship UserId
 friendshipUser1' = EntityFieldWrapper FriendshipUser1
 
 {-@ assume friendshipUser2' :: EntityFieldWrapper <
-    {\row viewer -> True}
+    {\_ _ -> True}
   , {\row field  -> field == friendshipUser2 (entityVal row)}
   , {\field row  -> field == friendshipUser2 (entityVal row)}
   > _ _
