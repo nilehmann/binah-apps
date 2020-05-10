@@ -21,11 +21,15 @@ import           Database.Persist.Sqlite        ( SqlBackend
                                                 , createSqlitePool
                                                 )
 import           Frankie.Config
+import           Frankie.Auth
 import qualified Database.Persist              as Persistent
 
+import           Binah.Core
 import           Binah.Frankie
 import           Binah.Infrastructure
 import           Binah.Insert
+import           Binah.Actions
+import           Binah.Filters
 
 import           Controllers
 import           Controllers.Paper
@@ -69,13 +73,20 @@ runServer = runNoLoggingT $ do
 
             fallback $ respond notFound
 
+{-@ ignore httpAuthDb @-}
+httpAuthDb :: AuthMethod (Entity User) Controller
+httpAuthDb = httpBasicAuth $ \username _password -> selectFirst (userName' ==. username)
+
 
 initDB :: IO ()
 initDB = runSqlite "db.sqlite" $ do
     runMigration migrateAll
-    Persistent.insert (User "nadia" "Nadia Polikarpova" "npolikarpova@ucsd.edu" "ucsd" "chair")
-    Persistent.insert (User "ranjit" "Ranjit Jhala" "npolikarpova@ucsd.edu" "ucsd" "pc")
-    Persistent.insert (User "rose" "Rose Kunkel" "rkunkel@ucsd.edu" "ucsd" "author")
+    Persistent.insert $ persistentRecord
+        (mkUser "nadia" "Nadia Polikarpova" "npolikarpova@ucsd.edu" "ucsd" "chair")
+    Persistent.insert
+        $ persistentRecord (mkUser "ranjit" "Ranjit Jhala" "npolikarpova@ucsd.edu" "ucsd" "pc")
+    Persistent.insert
+        $ persistentRecord (mkUser "rose" "Rose Kunkel" "rkunkel@ucsd.edu" "ucsd" "author")
 
     return ()
 

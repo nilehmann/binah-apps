@@ -40,7 +40,7 @@ instance HasSqlBackend Config where
 instance HasAuthMethod (Entity User) Controller Config where
   getAuthMethod = configAuthMethod
 
-{-@ respondHtml :: _ -> _ -> TaggedT<{\_ -> True}, {\v -> v == currentUser}> _ _ @-}
+{-@ respondHtml :: _ -> TaggedT<{\_ -> True}, {\v -> v == currentUser}> _ _ @-}
 respondHtml :: TemplateData d => d -> Controller b
 respondHtml d = do
   page <- renderTemplate d

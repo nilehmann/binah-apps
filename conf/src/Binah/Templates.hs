@@ -30,6 +30,8 @@ import           Binah.Infrastructure
 import           Binah.Filters
 import           Binah.Frankie
 
+import           Model
+
 class TemplateData d where
   templateFile :: FilePath
   toMustache :: d -> Mustache.Value
@@ -56,8 +58,8 @@ getOrLoadTemplate searchDirs file = do
         pure template
       Left err -> error $ "Error parsing template " ++ file ++ ": " ++ show err
 
-{-@ assume renderTemplate :: _ -> _ -> TaggedT<{\_ -> True}, {\_ -> False}> _ _ @-}
 {-@ ignore renderTemplate @-}
+{-@ assume renderTemplate :: _ -> TaggedT<{\_ -> True}, {\_ -> False}> _ _ @-}
 renderTemplate
   :: forall d w m config
    . ( MonadController w m

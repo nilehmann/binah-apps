@@ -67,7 +67,7 @@ reviewNew pid = do
     case (score, lookup "content" params) of
       (Just score, Just content) -> do
         -- ENCORCE: phase == review && author is the viewer && viewer is a reviewer of the paper
-        reviewId <- insert (Review paperId viewerId content score)
+        reviewId <- insert (mkReview paperId viewerId content score)
         respond (redirectTo (reviewRoute reviewId))
       _ -> respondTagged badRequest
 

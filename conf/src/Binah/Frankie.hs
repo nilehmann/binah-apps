@@ -12,7 +12,6 @@ module Binah.Frankie
   , backend
   , respondTagged
   , requireAuthUser
-  , httpAuthDb
   , parseForm
   , module Frankie
   )
@@ -97,14 +96,6 @@ class HasSqlBackend config where
 
 backend :: (MonadConfig config m, HasSqlBackend config) => m Persist.SqlBackend
 backend = getSqlBackend <$> getConfig
-
-{-@ ignore httpAuthDb @-}
-{-@ assume httpAuthDb :: AuthMethod {v:(Entity User) | v == currentUser} (TaggedT<{\_ -> True}, {\_ -> False}> m)@-}
-httpAuthDb
-  :: (MonadController w m, MonadConfig config m, HasSqlBackend config, MonadTIO m)
-  => AuthMethod (Entity User) (TaggedT m)
-httpAuthDb = httpBasicAuth $ \username _password ->
-  mapTaggedT (reading backend) $ selectFirst (EntityFieldWrapper UserUsername ==. username)
 
 instance WebMonad TIO where
   data Request TIO = RequestTIO { unRequestTIO :: Wai.Request }

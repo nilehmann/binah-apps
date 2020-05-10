@@ -1,3 +1,7 @@
+predicate isAuthor   :: UserId -> PaperId -> Bool
+predicate isAccepted :: PaperId -> Bool
+predicate isReviewer :: UserId -> PaperId -> Bool
+
 User
   username Text
   name Text
@@ -14,6 +18,8 @@ Paper
   assert [isAuthor author entityKey]
   assert [accepted => isAccepted entityKey]
 
+  insert {\paper viewer -> paperAuthor paper == entityKey viewer && paperAccepted paper == False && currentStage == SubmitStage}
+
 PaperCoauthor
   paper PaperId @PcOrAuthorOrAccepted'
   author Text   @PcOrAuthorOrAccepted'
@@ -23,15 +29,17 @@ ReviewAssignment
   user UserId     @OnlyPc
   assignType Text @OnlyPc
 
+  assert [isReviewer user paper]
+
+  insert {\row viewer -> IsPc viewer && currentStage == ReviewStage}
+
 Review
   paper PaperId   @PcOrAuthorIfPublic
   reviewer UserId @OnlyPc
   content Text    @PcOrAuthorIfPublic
   score Int       @PcOrAuthorIfPublic
 
-predicate isAuthor   :: UserId -> PaperId -> Bool
-
-predicate isAccepted :: PaperId -> Bool
+  insert {\review viewer -> currentStage == ReviewStage && reviewReviewer review == entityKey viewer && isReviewer (entityKey viewer) (reviewPaper review)}
 
 policy IsChair = \user -> userLevel user == "chair"
 

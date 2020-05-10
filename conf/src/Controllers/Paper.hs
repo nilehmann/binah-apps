@@ -142,16 +142,15 @@ paperNew = do
   req      <- request
   if reqMethod req == methodPost then insertPaper viewerId else respondHtml PaperNew
 
-{-@ insertPaper :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
+{-@ insertPaper :: {u:_ | u == entityKey currentUser} -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
 insertPaper :: UserId -> Controller ()
 insertPaper authorId = do
   params <- parseForm
   let title    = lookup "title" params
   let abstract = lookup "abstract" params
-  case (title, abstract) of
-    (Just title, Just abstract) -> do
-      -- ENFORCE: authorId == viewerId && accepted == false && stage == Submit
-      paperId <- insert (Paper authorId title abstract False)
+  case (title, abstract, currentStage == SubmitStage) of
+    (Just title, Just abstract, True) -> do
+      paperId <- insert (mkPaper authorId title abstract False)
       respondTagged (redirectTo (paperRoute paperId))
     _ -> respondTagged badRequest
 
@@ -193,15 +192,15 @@ paperChair pid = do
   reviewers <- getReviewers paperId
   respondHtml $ PaperChair paper (map (uncurry UserData) pcsData) reviewers
 
+{-@ assignReviewer :: _ -> TaggedT<{\_ -> True}, {\_ -> True}> _ _@-}
 assignReviewer :: PaperId -> Controller ()
 assignReviewer paperId = do
   params <- parseForm
   case lookup "reviewer" params <&> Text.unpack >>= readMaybe <&> toSqlKey of
     Nothing     -> respondTagged badRequest
     Just userId -> do
-      -- ENFORCE: userId should be a pc && phase should be review
       -- ENFORCE: should we enforce unique constraints here?
-      insert (ReviewAssignment paperId userId "")
+      insert (mkReviewAssignment paperId userId "")
       return ()
 
 
