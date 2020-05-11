@@ -12,7 +12,7 @@ Wish
   insert @IsOwner
 
   // update: 
-  // * If user is the owner
+  // * If viewer is the owner
   //   - Only description and accessLevel can be updated
 
 Friendship
@@ -24,11 +24,11 @@ Friendship
 
   insert {\row viewer -> 
     friendshipUser1 row == entityKey viewer &&
-    !accepted
+    accepted == False
   }
 
   // update: 
-  // * If is user2 
+  // * If viewer is user2 
   //   - Only accepted can be updated
 
 policy PublicOrFriends = \wish viewer ->
