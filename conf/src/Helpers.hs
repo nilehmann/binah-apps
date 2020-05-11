@@ -31,6 +31,16 @@ chair user = do
   level <- project userLevel' user
   return (level == "chair")
 
+{-@ checkPcOr :: _ -> u:_ -> TaggedT<{\_ -> True}, {\v -> v == currentUser}> _ {v: () | IsPc u} @-}
+checkPcOr :: Response -> Entity User -> Controller ()
+checkPcOr response user = do
+  level <- project userLevel' user
+  if (level == "chair" || level == "pc") then return () else respondTagged response
+
+{-@ checkStageOr :: _ -> s:_  -> TaggedT<{\_ -> True}, {\v -> v == currentUser}> _ {v: () | s == currentStage} @-}
+checkStageOr :: Response -> String -> Controller ()
+checkStageOr response stage = if currentStage == stage then return () else respondTagged response
+
 outerJoinBy :: Eq key => (a -> key) -> (b -> key) -> (a -> Maybe b -> c) -> [a] -> [b] -> [c]
 outerJoinBy xsKey ysKey f xs ys =
   let ysByKey = map (\y -> (ysKey y, y)) ys in map (\x -> f x (lookup (xsKey x) ysByKey)) xs

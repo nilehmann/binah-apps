@@ -60,19 +60,22 @@ reviewNew pid = do
   let paperId = toSqlKey pid
   viewer   <- requireAuthUser
   viewerId <- project userId' viewer
-
+  _        <- checkPcOr forbidden viewer
+  _        <- checkStageOr forbidden "review"
   req      <- request
-  when (reqMethod req == methodPost) $ do
-    params <- parseForm
-    let score = lookup "score" params >>= readMaybe . Text.unpack
-    case (score, lookup "content" params) of
-      (Just score, Just content) -> do
-        -- ENCORCE: phase == review && author is the viewer && viewer is a reviewer of the paper
-        reviewId <- insert (mkReview paperId viewerId content score)
-        respond (redirectTo (reviewRoute reviewId))
-      _ -> respondTagged badRequest
-
-  respondTagged forbidden
+  if reqMethod req == methodPost
+    then do
+      params <- parseForm
+      _      <- selectFirstOr
+        forbidden
+        (reviewAssignmentPaper' ==. paperId &&: reviewAssignmentUser' ==. viewerId)
+      let score = lookup "score" params >>= readMaybe . Text.unpack
+      case (score, lookup "content" params) of
+        (Just score, Just content) -> do
+          reviewId <- insert (mkReview paperId viewerId content score)
+          respondTagged (redirectTo (reviewRoute reviewId))
+        _ -> respondTagged badRequest
+    else respondTagged forbidden
 
 
 ------------------------------------------------------------------------------------------------
@@ -86,7 +89,7 @@ instance TemplateData ShowReview where
 
   toMustache (ShowReview review) = Mustache.object ["review" ~> review]
 
-{-@ reviewShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
+{-@ updateReview :: _ -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ @-}
 updateReview :: ReviewId -> Controller ()
 updateReview reviewId = do
   viewer <- requireAuthUser
@@ -114,17 +117,13 @@ reviewShow rid = do
 
   when (reqMethod req == methodPost) (updateReview reviewId)
 
-  maybeReview <- selectFirst (reviewId' ==. reviewId)
-  review      <- case maybeReview of
-    Just review -> return review
-    Nothing     -> respondTagged notFound
-
-  isPC <- pc viewer
-  case (isPC, currentStage) of
+  review <- selectFirstOr404 (reviewId' ==. reviewId)
+  isPC   <- pc viewer
+  case (isPC, currentStage == "public") of
     (True, _) -> do
       reviewData <- project2 (reviewScore', reviewContent') review
       respondHtml $ ShowReview (uncurry ReviewData reviewData)
-    (_, "public") -> do
+    (_, True) -> do
       paperId <- project reviewPaper' review
       paper   <- selectFirst (paperId' ==. paperId &&: paperAuthor' ==. viewerId)
       case paper of

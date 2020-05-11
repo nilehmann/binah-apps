@@ -136,5 +136,5 @@ trimPath path = if (not . null $ path) && Text.null (last path) then init path e
 parseForm :: (MonadController TIO m, MonadTIO m) => m [(Text, Text)]
 parseForm = do
   req    <- request
-  parsed <- liftTIO . TIO $ Wai.parseRequestBody Wai.lbsBackEnd $ unRequestTIO req
+  parsed <- liftTIO $ TIO $ Wai.parseRequestBody Wai.lbsBackEnd $ unRequestTIO req
   return $ map (bimap decodeUtf8 decodeUtf8) (fst parsed)
