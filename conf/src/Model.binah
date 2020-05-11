@@ -29,7 +29,7 @@ Paper
   // * If the viewer is the author and currentStage == SubmitStage:
   //   - only title and abstract can be updated
   // * If the viewer is chair and stage == review:
-  //   - paper can be accepted
+  //   - only accepted can be upated
 
 ReviewAssignment
   paper PaperId   @OnlyPc
