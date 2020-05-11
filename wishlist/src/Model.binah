@@ -11,11 +11,25 @@ Wish
 
   insert @IsOwner
 
+  // update: 
+  // * If user is the owner
+  //   - Only description and accessLevel can be updated
+
 Friendship
   user1 UserId
   user2 UserId
+  accepted Bool
 
-  assert [friends user1 user2]
+  assert [accepted => friends user1 user2]
+
+  insert {\row viewer -> 
+    friendshipUser1 row == entityKey viewer &&
+    !accepted
+  }
+
+  // update: 
+  // * If is user2 
+  //   - Only accepted can be updated
 
 policy PublicOrFriends = \wish viewer ->
   wishAccessLevel wish == "public" ||

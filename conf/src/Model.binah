@@ -18,11 +18,18 @@ Paper
   assert [isAuthor author entityKey]
   assert [accepted => isAccepted entityKey]
 
-  insert {\paper viewer -> paperAuthor paper == entityKey viewer && paperAccepted paper == False && currentStage == SubmitStage}
+  insert {\paper viewer -> 
+    paperAuthor paper == entityKey viewer && 
+    paperAccepted paper == False && 
+     
+    currentStage == SubmitStage
+  }
 
-PaperCoauthor
-  paper PaperId @PcOrAuthorOrAccepted'
-  author Text   @PcOrAuthorOrAccepted'
+  // update: 
+  // * If the viewer is the author and currentStage == SubmitStage:
+  //   - only title and abstract can be updated
+  // * If the viewer is chair and stage == review:
+  //   - paper can be accepted
 
 ReviewAssignment
   paper PaperId   @OnlyPc
@@ -33,13 +40,29 @@ ReviewAssignment
 
   insert {\row viewer -> IsPc viewer && currentStage == ReviewStage}
 
+  // update: 
+  // * if viewer is chair and stage == review
+  //   - Assignee has to be PC
+
 Review
   paper PaperId   @PcOrAuthorIfPublic
   reviewer UserId @OnlyPc
   content Text    @PcOrAuthorIfPublic
   score Int       @PcOrAuthorIfPublic
 
-  insert {\review viewer -> currentStage == ReviewStage && reviewReviewer review == entityKey viewer && isReviewer (entityKey viewer) (reviewPaper review)}
+  insert {\review viewer -> 
+    currentStage == ReviewStage && 
+    reviewReviewer review == entityKey viewer && 
+    isReviewer (entityKey viewer) (reviewPaper review)
+  }
+
+  // update: 
+  // * If viewer is reviewer of the paper and stage == review
+  //   - everything can be updated
+
+PaperCoauthor
+  paper PaperId @PcOrAuthorOrAccepted'
+  author Text   @PcOrAuthorOrAccepted'
 
 policy IsChair = \user -> userLevel user == "chair"
 
