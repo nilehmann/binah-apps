@@ -488,7 +488,6 @@ paperCoauthorAuthor' = EntityFieldWrapper PaperCoauthorAuthor
 
 {-@ measure currentStage :: String @-}
 
-{-@ assume currentStage :: {v: String | currentSage == v @-}
+{-@ assume currentStage :: {v: String | currentStage == v} @-}
 currentStage :: String
 currentStage = "submit"
-

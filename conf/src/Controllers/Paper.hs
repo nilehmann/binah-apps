@@ -142,7 +142,10 @@ paperNew = do
   req      <- request
   if reqMethod req == methodPost then insertPaper viewerId else respondHtml PaperNew
 
-{-@ insertPaper :: {u:_ | u == entityKey currentUser} -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
+{-@ insertPaper :: 
+     {u:_ | u == entityKey currentUser} 
+  -> TaggedT<{\v -> v == currentUser}, {\_ -> True}> _ _ 
+@-}
 insertPaper :: UserId -> Controller ()
 insertPaper authorId = do
   params <- parseForm
@@ -180,28 +183,30 @@ instance ToMustache UserData where
 paperChair :: Int64 -> Controller ()
 paperChair pid = do
   let paperId = toSqlKey pid
-  viewer   <- requireAuthUser
-  viewerId <- project userId' viewer
-  req      <- request
-  when (reqMethod req == methodPost) (assignReviewer paperId)
+  viewer  <- requireAuthUser
+  isChair <- chair viewer
+  if not isChair
+    then respondTagged forbidden
+    else do
+      viewerId <- project userId' viewer
+      req      <- request
+      when (reqMethod req == methodPost) (assignReviewer paperId)
 
-  paper     <- getPaper paperId
-  -- TODO: we should filter pcs that are already reviewers here
-  pcs       <- selectList (userLevel' ==. "pc")
-  pcsData   <- projectList2 (userId', userName') pcs
-  reviewers <- getReviewers paperId
-  respondHtml $ PaperChair paper (map (uncurry UserData) pcsData) reviewers
+      paper     <- getPaper paperId
+      -- TODO: we should filter pcs that are already reviewers here
+      pcs       <- selectList (userLevel' ==. "pc")
+      pcsData   <- projectList2 (userId', userName') pcs
+      reviewers <- getReviewers paperId
+      respondHtml $ PaperChair paper (map (uncurry UserData) pcsData) reviewers
 
-{-@ assignReviewer :: _ -> TaggedT<{\_ -> True}, {\_ -> True}> _ _@-}
+{-@ assignReviewer :: _ -> TaggedT<{\v -> v == currentUser}, {\_ -> True}> _ _ @-}
 assignReviewer :: PaperId -> Controller ()
 assignReviewer paperId = do
   params <- parseForm
   case lookup "reviewer" params <&> Text.unpack >>= readMaybe <&> toSqlKey of
     Nothing     -> respondTagged badRequest
-    Just userId -> do
-      -- ENFORCE: should we enforce unique constraints here?
-      insert (mkReviewAssignment paperId userId "")
-      return ()
+    Just userId -> insert (mkReviewAssignment paperId userId "")
+  return ()
 
 
 {-@ getReviewers :: _ -> TaggedT<{\v -> IsChair v}, {\_ -> False}> _ _ @-}
@@ -228,7 +233,7 @@ getMyPaper userId paperId = do
       (title, abstract) <- project2 (paperTitle', paperAbstract') paper
       return . Just $ (PaperData paperId title abstract authors, reviews)
 
-{-@ getPaper :: _ -> TaggedT<{\v -> IsPc v}, {\_ -> False}> _ _ @-}
+{-@ getPaper :: _ -> TaggedT<{\v -> IsPc v}, {\v -> v == currentUser}> _ _ @-}
 getPaper :: PaperId -> Controller PaperData
 getPaper paperId = do
   paper             <- selectFirstOr404 (paperId' ==. paperId)
@@ -240,7 +245,7 @@ getPaper paperId = do
 {-@ getReviews ::
   p: _ ->
   TaggedT<{\v -> IsPc v ||
-                 (currentStage == PublicStage && isAuthor (entityKey v) (entityKey p))},
+                 (currentStage == "public" && isAuthor (entityKey v) (entityKey p))},
           {\_ -> False}> _ _ @-}
 getReviews :: Entity Paper -> Controller [AnonymousReview]
 getReviews paper = do

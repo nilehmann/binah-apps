@@ -70,7 +70,7 @@ getAllPapers = do
   joinWithAuthors $ zip authorIds paperData
 
 
-{-@ getAcceptedPapers :: TaggedT<{\_ -> currentStage == PublicStage}, {\_ -> False}> _ _ @-}
+{-@ getAcceptedPapers :: TaggedT<{\_ -> currentStage == "public"}, {\_ -> False}> _ _ @-}
 getAcceptedPapers :: Controller [RowData]
 getAcceptedPapers = do
   papers    <- selectList (paperAccepted' ==. True)
