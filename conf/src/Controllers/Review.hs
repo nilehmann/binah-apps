@@ -37,6 +37,7 @@ import           Model
 
 import           Helpers
 import           Controllers
+
 import           Control.Monad                  ( when )
 
 
@@ -91,7 +92,7 @@ updateReview reviewId = do
   viewer <- requireAuthUser
   isPC   <- pc viewer
 
-  when (not isPC || currentStage /= ReviewStage) (respondTagged forbidden)
+  when (not isPC || currentStage /= "review") (respondTagged forbidden)
 
   params <- parseForm
   case lookup "content" params of
@@ -123,7 +124,7 @@ reviewShow rid = do
     (True, _) -> do
       reviewData <- project2 (reviewScore', reviewContent') review
       respondHtml $ ShowReview (uncurry ReviewData reviewData)
-    (_, PublicStage) -> do
+    (_, "public") -> do
       paperId <- project reviewPaper' review
       paper   <- selectFirst (paperId' ==. paperId &&: paperAuthor' ==. viewerId)
       case paper of

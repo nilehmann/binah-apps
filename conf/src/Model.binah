@@ -21,15 +21,14 @@ Paper
   insert {\paper viewer -> 
     paperAuthor paper == entityKey viewer && 
     paperAccepted paper == False && 
-     
-    currentStage == SubmitStage
+    currentStage == "submit"
   }
 
-  // update: 
-  // * If the viewer is the author and currentStage == SubmitStage:
-  //   - only title and abstract can be updated
-  // * If the viewer is chair and stage == review:
-  //   - paper can be accepted
+  -- update: 
+  -- * If the viewer is the author and currentStage == "submit":
+  --   - only title and abstract can be updated
+  -- * If the viewer is chair and stage == review:
+  --   - paper can be accepted
 
 ReviewAssignment
   paper PaperId   @OnlyPc
@@ -38,11 +37,11 @@ ReviewAssignment
 
   assert [isReviewer user paper]
 
-  insert {\row viewer -> IsPc viewer && currentStage == ReviewStage}
+  insert {\row viewer -> IsPc viewer && currentStage == "review"}
 
-  // update: 
-  // * if viewer is chair and stage == review
-  //   - Assignee has to be PC
+  -- update: 
+  -- * if viewer is chair and stage == review
+  --   - Assignee has to be PC
 
 Review
   paper PaperId   @PcOrAuthorIfPublic
@@ -51,14 +50,14 @@ Review
   score Int       @PcOrAuthorIfPublic
 
   insert {\review viewer -> 
-    currentStage == ReviewStage && 
+    currentStage == "review" && 
     reviewReviewer review == entityKey viewer && 
     isReviewer (entityKey viewer) (reviewPaper review)
   }
 
-  // update: 
-  // * If viewer is reviewer of the paper and stage == review
-  //   - everything can be updated
+  -- update: 
+  -- * If viewer is reviewer of the paper and stage == review
+  --   - everything can be updated
 
 PaperCoauthor
   paper PaperId @PcOrAuthorOrAccepted'
@@ -72,29 +71,31 @@ policy ChairOrSelf = \user viewer ->
   IsChair viewer || entityKey viewer == entityKey user
 
 policy PcOrPublic = \row viewer ->
-  IsPc viewer || currentStage == PublicStage
+  IsPc viewer || currentStage == "public"
 
 policy PcOrAuthorOrAccepted = \paper viewer ->
   IsPc viewer ||
   isAuthor (entityKey viewer) (entityKey paper) ||
-  (currentStage == PublicStage && paperAccepted paper)
+  (currentStage == "public" && paperAccepted paper)
 
 policy PcOrAuthorOrAccepted' = \coauthor viewer ->
   IsPc viewer ||
   isAuthor (entityKey viewer) (paperCoauthorPaper coauthor) ||
-  (currentStage == PublicStage && isAccepted (paperCoauthorPaper coauthor))
+  (currentStage == "public" && isAccepted (paperCoauthorPaper coauthor))
 
 policy OnlyPc = \row viewer -> IsPc viewer
 
 policy PcOrAuthorIfPublic = \review viewer -> 
     IsPc viewer ||
-    (currentStage == PublicStage &&
+    (currentStage == "public" &&
       isAuthor (entityKey viewer) (reviewPaper review))
 
 #inline
-{-@ data Stage = SubmitStage | ReviewStage | PublicStage @-}
-data Stage = SubmitStage | ReviewStage | PublicStage deriving Eq
+-- {-@ data Stage = SubmitStage | ReviewStage | PublicStage @-}
+-- data Stage = SubmitStage | ReviewStage | PublicStage deriving Eq
 
-{-@ inline currentStage @-}
-currentStage :: Stage
-currentStage = SubmitStage
+{-@ measure currentStage :: String @-}
+
+{-@ assume currentStage :: {v: String | currentSage == v @-}
+currentStage :: String
+currentStage = "submit"

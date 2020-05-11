@@ -9,22 +9,21 @@
 {-@ LIQUID "--compile-spec" @-}
 
 module Model
-  ( Stage(..)
-  , currentStage
+  ( currentStage
   , EntityFieldWrapper(..)
   , migrateAll
   , BinahRecord
   , persistentRecord
   , mkUser
   , mkPaper
-  , mkPaperCoauthor
   , mkReviewAssignment
   , mkReview
+  , mkPaperCoauthor
   , User
   , Paper
-  , PaperCoauthor
   , ReviewAssignment
   , Review
+  , PaperCoauthor
   , userId'
   , userUsername'
   , userName'
@@ -36,9 +35,6 @@ module Model
   , paperTitle'
   , paperAbstract'
   , paperAccepted'
-  , paperCoauthorId'
-  , paperCoauthorPaper'
-  , paperCoauthorAuthor'
   , reviewAssignmentId'
   , reviewAssignmentPaper'
   , reviewAssignmentUser'
@@ -48,11 +44,14 @@ module Model
   , reviewReviewer'
   , reviewContent'
   , reviewScore'
+  , paperCoauthorId'
+  , paperCoauthorPaper'
+  , paperCoauthorAuthor'
   , UserId
   , PaperId
-  , PaperCoauthorId
   , ReviewAssignmentId
   , ReviewId
+  , PaperCoauthorId
   )
 where
 
@@ -82,10 +81,6 @@ Paper
   abstract Text
   accepted Bool
 
-PaperCoauthor
-  paper PaperId
-  author Text
-
 ReviewAssignment
   paper PaperId
   user UserId
@@ -96,6 +91,10 @@ Review
   reviewer UserId
   content Text
   score Int
+
+PaperCoauthor
+  paper PaperId
+  author Text
 |]
 
 {-@
@@ -128,15 +127,15 @@ data EntityFieldWrapper record typ = EntityFieldWrapper (Persist.EntityField rec
 
 {-@ predicate ChairOrSelf USER VIEWER = IsChair VIEWER || entityKey VIEWER == entityKey USER @-}
 
-{-@ predicate PcOrPublic ROW VIEWER = IsPc VIEWER || currentStage == PublicStage @-}
+{-@ predicate PcOrPublic ROW VIEWER = IsPc VIEWER || currentStage == "public" @-}
 
-{-@ predicate PcOrAuthorOrAccepted PAPER VIEWER = IsPc VIEWER || isAuthor (entityKey VIEWER) (entityKey PAPER) || (currentStage == PublicStage && paperAccepted (entityVal PAPER)) @-}
+{-@ predicate PcOrAuthorOrAccepted PAPER VIEWER = IsPc VIEWER || isAuthor (entityKey VIEWER) (entityKey PAPER) || (currentStage == "public" && paperAccepted (entityVal PAPER)) @-}
 
-{-@ predicate PcOrAuthorOrAccepted' COAUTHOR VIEWER = IsPc VIEWER || isAuthor (entityKey VIEWER) (paperCoauthorPaper (entityVal COAUTHOR)) || (currentStage == PublicStage && isAccepted (paperCoauthorPaper (entityVal COAUTHOR))) @-}
+{-@ predicate PcOrAuthorOrAccepted' COAUTHOR VIEWER = IsPc VIEWER || isAuthor (entityKey VIEWER) (paperCoauthorPaper (entityVal COAUTHOR)) || (currentStage == "public" && isAccepted (paperCoauthorPaper (entityVal COAUTHOR))) @-}
 
 {-@ predicate OnlyPc ROW VIEWER = IsPc VIEWER @-}
 
-{-@ predicate PcOrAuthorIfPublic REVIEW VIEWER = IsPc VIEWER || (currentStage == PublicStage && isAuthor (entityKey VIEWER) (reviewPaper (entityVal REVIEW))) @-}
+{-@ predicate PcOrAuthorIfPublic REVIEW VIEWER = IsPc VIEWER || (currentStage == "public" && isAuthor (entityKey VIEWER) (reviewPaper (entityVal REVIEW))) @-}
 
 --------------------------------------------------------------------------------
 -- | Records
@@ -252,8 +251,8 @@ userLevel' = EntityFieldWrapper UserLevel
   -> x_3: Bool
   -> BinahRecord < 
        {\row -> paperAuthor (entityVal row) == x_0 && paperTitle (entityVal row) == x_1 && paperAbstract (entityVal row) == x_2 && paperAccepted (entityVal row) == x_3}
-     , {\paper viewer -> paperAuthor (entityVal paper) == entityKey viewer && paperAccepted (entityVal paper) == False && currentStage == SubmitStage}
-     , {\row viewer -> (IsPc viewer || isAuthor (entityKey viewer) (entityKey row) || (currentStage == PublicStage && paperAccepted (entityVal row))) && (IsPc viewer || isAuthor (entityKey viewer) (entityKey row) || (currentStage == PublicStage && paperAccepted (entityVal row))) && (IsPc viewer || isAuthor (entityKey viewer) (entityKey row) || (currentStage == PublicStage && paperAccepted (entityVal row))) && (IsPc viewer || currentStage == PublicStage)}
+     , {\paper viewer -> paperAuthor (entityVal paper) == entityKey viewer && paperAccepted (entityVal paper) == False && currentStage == "submit"}
+     , {\row viewer -> (IsPc viewer || isAuthor (entityKey viewer) (entityKey row) || (currentStage == "public" && paperAccepted (entityVal row))) || (IsPc viewer || currentStage == "public")}
      > Paper
 @-}
 mkPaper x_0 x_1 x_2 x_3 = BinahRecord (Paper x_0 x_1 x_2 x_3)
@@ -274,7 +273,7 @@ paperId' :: EntityFieldWrapper Paper PaperId
 paperId' = EntityFieldWrapper PaperId
 
 {-@ assume paperAuthor' :: EntityFieldWrapper <
-    {\paper viewer -> IsPc viewer || isAuthor (entityKey viewer) (entityKey paper) || (currentStage == PublicStage && paperAccepted (entityVal paper))}
+    {\paper viewer -> IsPc viewer || isAuthor (entityKey viewer) (entityKey paper) || (currentStage == "public" && paperAccepted (entityVal paper))}
   , {\row field  -> field == paperAuthor (entityVal row)}
   , {\field row  -> field == paperAuthor (entityVal row)}
   > _ _
@@ -283,7 +282,7 @@ paperAuthor' :: EntityFieldWrapper Paper UserId
 paperAuthor' = EntityFieldWrapper PaperAuthor
 
 {-@ assume paperTitle' :: EntityFieldWrapper <
-    {\paper viewer -> IsPc viewer || isAuthor (entityKey viewer) (entityKey paper) || (currentStage == PublicStage && paperAccepted (entityVal paper))}
+    {\paper viewer -> IsPc viewer || isAuthor (entityKey viewer) (entityKey paper) || (currentStage == "public" && paperAccepted (entityVal paper))}
   , {\row field  -> field == paperTitle (entityVal row)}
   , {\field row  -> field == paperTitle (entityVal row)}
   > _ _
@@ -292,7 +291,7 @@ paperTitle' :: EntityFieldWrapper Paper Text
 paperTitle' = EntityFieldWrapper PaperTitle
 
 {-@ assume paperAbstract' :: EntityFieldWrapper <
-    {\paper viewer -> IsPc viewer || isAuthor (entityKey viewer) (entityKey paper) || (currentStage == PublicStage && paperAccepted (entityVal paper))}
+    {\paper viewer -> IsPc viewer || isAuthor (entityKey viewer) (entityKey paper) || (currentStage == "public" && paperAccepted (entityVal paper))}
   , {\row field  -> field == paperAbstract (entityVal row)}
   , {\field row  -> field == paperAbstract (entityVal row)}
   > _ _
@@ -301,60 +300,13 @@ paperAbstract' :: EntityFieldWrapper Paper Text
 paperAbstract' = EntityFieldWrapper PaperAbstract
 
 {-@ assume paperAccepted' :: EntityFieldWrapper <
-    {\row viewer -> IsPc viewer || currentStage == PublicStage}
+    {\row viewer -> IsPc viewer || currentStage == "public"}
   , {\row field  -> field == paperAccepted (entityVal row)}
   , {\field row  -> field == paperAccepted (entityVal row)}
   > _ _
 @-}
 paperAccepted' :: EntityFieldWrapper Paper Bool
 paperAccepted' = EntityFieldWrapper PaperAccepted
-
--- * PaperCoauthor
-
-{-@ measure paperCoauthorPaper :: PaperCoauthor -> PaperId @-}
-{-@ measure paperCoauthorAuthor :: PaperCoauthor -> Text @-}
-
-{-@ mkPaperCoauthor :: 
-     x_0: PaperId
-  -> x_1: Text
-  -> BinahRecord < 
-       {\row -> paperCoauthorPaper (entityVal row) == x_0 && paperCoauthorAuthor (entityVal row) == x_1}
-     , {\_ _ -> True}
-     , {\row viewer -> (IsPc viewer || isAuthor (entityKey viewer) (paperCoauthorPaper (entityVal row)) || (currentStage == PublicStage && isAccepted (paperCoauthorPaper (entityVal row)))) && (IsPc viewer || isAuthor (entityKey viewer) (paperCoauthorPaper (entityVal row)) || (currentStage == PublicStage && isAccepted (paperCoauthorPaper (entityVal row))))}
-     > PaperCoauthor
-@-}
-mkPaperCoauthor x_0 x_1 = BinahRecord (PaperCoauthor x_0 x_1)
-
-{-@ invariant {v: Entity PaperCoauthor | v == getJust (entityKey v)} @-}
-
-
-
-{-@ assume paperCoauthorId' :: EntityFieldWrapper <
-    {\row viewer -> True}
-  , {\row field  -> field == entityKey row}
-  , {\field row  -> field == entityKey row}
-  > _ _
-@-}
-paperCoauthorId' :: EntityFieldWrapper PaperCoauthor PaperCoauthorId
-paperCoauthorId' = EntityFieldWrapper PaperCoauthorId
-
-{-@ assume paperCoauthorPaper' :: EntityFieldWrapper <
-    {\coauthor viewer -> IsPc viewer || isAuthor (entityKey viewer) (paperCoauthorPaper (entityVal coauthor)) || (currentStage == PublicStage && isAccepted (paperCoauthorPaper (entityVal coauthor)))}
-  , {\row field  -> field == paperCoauthorPaper (entityVal row)}
-  , {\field row  -> field == paperCoauthorPaper (entityVal row)}
-  > _ _
-@-}
-paperCoauthorPaper' :: EntityFieldWrapper PaperCoauthor PaperId
-paperCoauthorPaper' = EntityFieldWrapper PaperCoauthorPaper
-
-{-@ assume paperCoauthorAuthor' :: EntityFieldWrapper <
-    {\coauthor viewer -> IsPc viewer || isAuthor (entityKey viewer) (paperCoauthorPaper (entityVal coauthor)) || (currentStage == PublicStage && isAccepted (paperCoauthorPaper (entityVal coauthor)))}
-  , {\row field  -> field == paperCoauthorAuthor (entityVal row)}
-  , {\field row  -> field == paperCoauthorAuthor (entityVal row)}
-  > _ _
-@-}
-paperCoauthorAuthor' :: EntityFieldWrapper PaperCoauthor Text
-paperCoauthorAuthor' = EntityFieldWrapper PaperCoauthorAuthor
 
 -- * ReviewAssignment
 
@@ -368,8 +320,8 @@ paperCoauthorAuthor' = EntityFieldWrapper PaperCoauthorAuthor
   -> x_2: Text
   -> BinahRecord < 
        {\row -> reviewAssignmentPaper (entityVal row) == x_0 && reviewAssignmentUser (entityVal row) == x_1 && reviewAssignmentAssignType (entityVal row) == x_2}
-     , {\row viewer -> False}
-     , {\row viewer -> (IsPc viewer) && (IsPc viewer) && (IsPc viewer)}
+     , {\row viewer -> IsPc viewer && currentStage == "review"}
+     , {\row viewer -> (IsPc viewer)}
      > ReviewAssignment
 @-}
 mkReviewAssignment x_0 x_1 x_2 = BinahRecord (ReviewAssignment x_0 x_1 x_2)
@@ -428,8 +380,8 @@ reviewAssignmentAssignType' = EntityFieldWrapper ReviewAssignmentAssignType
   -> x_3: Int
   -> BinahRecord < 
        {\row -> reviewPaper (entityVal row) == x_0 && reviewReviewer (entityVal row) == x_1 && reviewContent (entityVal row) == x_2 && reviewScore (entityVal row) == x_3}
-     , {\review viewer -> currentStage == ReviewStage && reviewReviewer (entityVal review) == entityKey viewer && isReviewer (entityKey viewer) (reviewPaper (entityVal review))}
-     , {\row viewer -> (IsPc viewer || (currentStage == PublicStage && isAuthor (entityKey viewer) (reviewPaper (entityVal row)))) && (IsPc viewer) && (IsPc viewer || (currentStage == PublicStage && isAuthor (entityKey viewer) (reviewPaper (entityVal row)))) && (IsPc viewer || (currentStage == PublicStage && isAuthor (entityKey viewer) (reviewPaper (entityVal row))))}
+     , {\review viewer -> currentStage == "review" && reviewReviewer (entityVal review) == entityKey viewer && isReviewer (entityKey viewer) (reviewPaper (entityVal review))}
+     , {\row viewer -> (IsPc viewer || (currentStage == "public" && isAuthor (entityKey viewer) (reviewPaper (entityVal row)))) || (IsPc viewer)}
      > Review
 @-}
 mkReview x_0 x_1 x_2 x_3 = BinahRecord (Review x_0 x_1 x_2 x_3)
@@ -448,7 +400,7 @@ reviewId' :: EntityFieldWrapper Review ReviewId
 reviewId' = EntityFieldWrapper ReviewId
 
 {-@ assume reviewPaper' :: EntityFieldWrapper <
-    {\review viewer -> IsPc viewer || (currentStage == PublicStage && isAuthor (entityKey viewer) (reviewPaper (entityVal review)))}
+    {\review viewer -> IsPc viewer || (currentStage == "public" && isAuthor (entityKey viewer) (reviewPaper (entityVal review)))}
   , {\row field  -> field == reviewPaper (entityVal row)}
   , {\field row  -> field == reviewPaper (entityVal row)}
   > _ _
@@ -466,7 +418,7 @@ reviewReviewer' :: EntityFieldWrapper Review UserId
 reviewReviewer' = EntityFieldWrapper ReviewReviewer
 
 {-@ assume reviewContent' :: EntityFieldWrapper <
-    {\review viewer -> IsPc viewer || (currentStage == PublicStage && isAuthor (entityKey viewer) (reviewPaper (entityVal review)))}
+    {\review viewer -> IsPc viewer || (currentStage == "public" && isAuthor (entityKey viewer) (reviewPaper (entityVal review)))}
   , {\row field  -> field == reviewContent (entityVal row)}
   , {\field row  -> field == reviewContent (entityVal row)}
   > _ _
@@ -475,7 +427,7 @@ reviewContent' :: EntityFieldWrapper Review Text
 reviewContent' = EntityFieldWrapper ReviewContent
 
 {-@ assume reviewScore' :: EntityFieldWrapper <
-    {\review viewer -> IsPc viewer || (currentStage == PublicStage && isAuthor (entityKey viewer) (reviewPaper (entityVal review)))}
+    {\review viewer -> IsPc viewer || (currentStage == "public" && isAuthor (entityKey viewer) (reviewPaper (entityVal review)))}
   , {\row field  -> field == reviewScore (entityVal row)}
   , {\field row  -> field == reviewScore (entityVal row)}
   > _ _
@@ -483,14 +435,60 @@ reviewContent' = EntityFieldWrapper ReviewContent
 reviewScore' :: EntityFieldWrapper Review Int
 reviewScore' = EntityFieldWrapper ReviewScore
 
+-- * PaperCoauthor
+
+{-@ measure paperCoauthorPaper :: PaperCoauthor -> PaperId @-}
+{-@ measure paperCoauthorAuthor :: PaperCoauthor -> Text @-}
+
+{-@ mkPaperCoauthor :: 
+     x_0: PaperId
+  -> x_1: Text
+  -> BinahRecord < 
+       {\row -> paperCoauthorPaper (entityVal row) == x_0 && paperCoauthorAuthor (entityVal row) == x_1}
+     , {\_ _ -> True}
+     , {\row viewer -> (IsPc viewer || isAuthor (entityKey viewer) (paperCoauthorPaper (entityVal row)) || (currentStage == "public" && isAccepted (paperCoauthorPaper (entityVal row))))}
+     > PaperCoauthor
+@-}
+mkPaperCoauthor x_0 x_1 = BinahRecord (PaperCoauthor x_0 x_1)
+
+{-@ invariant {v: Entity PaperCoauthor | v == getJust (entityKey v)} @-}
+
+
+
+{-@ assume paperCoauthorId' :: EntityFieldWrapper <
+    {\row viewer -> True}
+  , {\row field  -> field == entityKey row}
+  , {\field row  -> field == entityKey row}
+  > _ _
+@-}
+paperCoauthorId' :: EntityFieldWrapper PaperCoauthor PaperCoauthorId
+paperCoauthorId' = EntityFieldWrapper PaperCoauthorId
+
+{-@ assume paperCoauthorPaper' :: EntityFieldWrapper <
+    {\coauthor viewer -> IsPc viewer || isAuthor (entityKey viewer) (paperCoauthorPaper (entityVal coauthor)) || (currentStage == "public" && isAccepted (paperCoauthorPaper (entityVal coauthor)))}
+  , {\row field  -> field == paperCoauthorPaper (entityVal row)}
+  , {\field row  -> field == paperCoauthorPaper (entityVal row)}
+  > _ _
+@-}
+paperCoauthorPaper' :: EntityFieldWrapper PaperCoauthor PaperId
+paperCoauthorPaper' = EntityFieldWrapper PaperCoauthorPaper
+
+{-@ assume paperCoauthorAuthor' :: EntityFieldWrapper <
+    {\coauthor viewer -> IsPc viewer || isAuthor (entityKey viewer) (paperCoauthorPaper (entityVal coauthor)) || (currentStage == "public" && isAccepted (paperCoauthorPaper (entityVal coauthor)))}
+  , {\row field  -> field == paperCoauthorAuthor (entityVal row)}
+  , {\field row  -> field == paperCoauthorAuthor (entityVal row)}
+  > _ _
+@-}
+paperCoauthorAuthor' :: EntityFieldWrapper PaperCoauthor Text
+paperCoauthorAuthor' = EntityFieldWrapper PaperCoauthorAuthor
+
 --------------------------------------------------------------------------------
 -- | Inline
 --------------------------------------------------------------------------------
 
-{-@ data Stage = SubmitStage | ReviewStage | PublicStage @-}
-data Stage = SubmitStage | ReviewStage | PublicStage deriving Eq
+{-@ measure currentStage :: String @-}
 
-{-@ inline currentStage @-}
-currentStage :: Stage
-currentStage = SubmitStage
+{-@ assume currentStage :: {v: String | currentSage == v @-}
+currentStage :: String
+currentStage = "submit"
 

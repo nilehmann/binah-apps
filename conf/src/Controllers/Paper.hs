@@ -73,7 +73,7 @@ paperShow pid = do
   reviews           <- if isPC then getReviews paper else return []
   (title, abstract) <- if isPC
     then project2 (paperTitle', paperAbstract') paper
-    else if currentStage == PublicStage
+    else if currentStage == "public"
       then do
         accepted <- project paperAccepted' paper
         if accepted then project2 (paperTitle', paperAbstract') paper else return ("", "")
@@ -135,7 +135,7 @@ updatePaper paperId = do
 {-@ paperNew :: TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
 paperNew :: Controller ()
 paperNew = do
-  when (currentStage /= SubmitStage) (respondTagged forbidden)
+  when (currentStage /= "submit") (respondTagged forbidden)
 
   viewer   <- requireAuthUser
   viewerId <- project userId' viewer
@@ -148,7 +148,7 @@ insertPaper authorId = do
   params <- parseForm
   let title    = lookup "title" params
   let abstract = lookup "abstract" params
-  case (title, abstract, currentStage == SubmitStage) of
+  case (title, abstract, currentStage == "submit") of
     (Just title, Just abstract, True) -> do
       paperId <- insert (mkPaper authorId title abstract False)
       respondTagged (redirectTo (paperRoute paperId))
@@ -224,7 +224,7 @@ getMyPaper userId paperId = do
     Nothing    -> return Nothing
     Just paper -> do
       authors           <- getAuthors paper
-      reviews           <- if currentStage == PublicStage then getReviews paper else return []
+      reviews           <- if currentStage == "public" then getReviews paper else return []
       (title, abstract) <- project2 (paperTitle', paperAbstract') paper
       return . Just $ (PaperData paperId title abstract authors, reviews)
 
