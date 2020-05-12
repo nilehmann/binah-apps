@@ -105,7 +105,7 @@ paperEdit pid = do
   req      <- request
   if reqMethod req == methodPost
     then do
-      updatePaper paperId
+      _ <- updatePaper paperId
       respondTagged (redirectTo (paperRoute paperId))
     else do
       maybePaper <- getMyPaper viewerId paperId
@@ -183,11 +183,11 @@ instance ToMustache UserData where
 paperChair :: Int64 -> Controller ()
 paperChair pid = do
   let paperId = toSqlKey pid
-  viewer   <- requireAuthUser
-  _        <- checkChairOr forbidden viewer
-  viewerId <- project userId' viewer
-  req      <- request
-  if reqMethod req == methodPost then assignReviewer paperId else return ()
+  viewer    <- requireAuthUser
+  _         <- checkChairOr forbidden viewer
+  viewerId  <- project userId' viewer
+  req       <- request
+  _         <- if reqMethod req == methodPost then assignReviewer paperId else return ()
 
   paper     <- getPaper paperId
   -- TODO: we should filter pcs that are already reviewers here
