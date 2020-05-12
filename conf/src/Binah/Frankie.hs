@@ -133,7 +133,9 @@ toWaiApplication app wReq wRespond = do
 trimPath :: [Text] -> [Text]
 trimPath path = if (not . null $ path) && Text.null (last path) then init path else path
 
-parseForm :: (MonadController TIO m, MonadTIO m) => m [(Text, Text)]
+{-@ ignore parseForm @-}
+{-@ parseForm :: TaggedT<{\_ -> True }, {\_ -> False}> _ _@-}
+parseForm :: (MonadController TIO m, MonadTIO m) => TaggedT m [(Text, Text)]
 parseForm = do
   req    <- request
   parsed <- liftTIO $ TIO $ Wai.parseRequestBody Wai.lbsBackEnd $ unRequestTIO req

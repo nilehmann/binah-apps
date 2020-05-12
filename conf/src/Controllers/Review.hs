@@ -65,10 +65,10 @@ reviewNew pid = do
   req      <- request
   if reqMethod req == methodPost
     then do
-      params <- parseForm
-      _      <- selectFirstOr
+      _ <- selectFirstOr
         forbidden
         (reviewAssignmentPaper' ==. paperId &&: reviewAssignmentUser' ==. viewerId)
+      params <- parseForm
       let score = lookup "score" params >>= readMaybe . Text.unpack
       case (score, lookup "content" params) of
         (Just score, Just content) -> do
