@@ -37,7 +37,11 @@ ReviewAssignment
 
   assert [isReviewer user paper]
 
-  insert {\row viewer -> IsPc viewer && currentStage == "review"}
+  insert {\row viewer -> 
+    IsChair viewer && 
+    IsPc (getJust (reviewAssignmentUser row)) && 
+    currentStage == "review"
+  }
 
   -- update: 
   -- * if viewer is chair and stage == review

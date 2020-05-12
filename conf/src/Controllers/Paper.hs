@@ -183,31 +183,30 @@ instance ToMustache UserData where
 paperChair :: Int64 -> Controller ()
 paperChair pid = do
   let paperId = toSqlKey pid
-  viewer  <- requireAuthUser
-  isChair <- chair viewer
-  if not isChair
-    then respondTagged forbidden
-    else do
-      viewerId <- project userId' viewer
-      req      <- request
-      when (reqMethod req == methodPost) (assignReviewer paperId)
+  viewer   <- requireAuthUser
+  _        <- checkChairOr forbidden viewer
+  viewerId <- project userId' viewer
+  req      <- request
+  if reqMethod req == methodPost then assignReviewer paperId else return ()
 
-      paper     <- getPaper paperId
-      -- TODO: we should filter pcs that are already reviewers here
-      pcs       <- selectList (userLevel' ==. "pc")
-      pcsData   <- projectList2 (userId', userName') pcs
-      reviewers <- getReviewers paperId
-      respondHtml $ PaperChair paper (map (uncurry UserData) pcsData) reviewers
+  paper     <- getPaper paperId
+  -- TODO: we should filter pcs that are already reviewers here
+  pcs       <- selectList (userLevel' ==. "pc")
+  pcsData   <- projectList2 (userId', userName') pcs
+  reviewers <- getReviewers paperId
+  respondHtml $ PaperChair paper (map (uncurry UserData) pcsData) reviewers
 
-{-@ assignReviewer :: _ -> TaggedT<{\v -> v == currentUser}, {\_ -> True}> _ _ @-}
+{-@ assignReviewer :: _ -> TaggedT<{\v -> v == currentUser && IsChair v}, {\_ -> True}> _ _ @-}
 assignReviewer :: PaperId -> Controller ()
 assignReviewer paperId = do
   params <- parseForm
-  case lookup "reviewer" params <&> Text.unpack >>= readMaybe <&> toSqlKey of
-    Nothing     -> respondTagged badRequest
-    Just userId -> insert (mkReviewAssignment paperId userId "")
-  return ()
-
+  let reviewerId = lookup "reviewer" params <&> Text.unpack >>= readMaybe <&> toSqlKey
+  case (reviewerId, currentStage == "review") of
+    (Just reviewerId, True) -> do
+      _ <- selectFirstOr forbidden (userId' ==. reviewerId &&: userLevel' ==. "pc")
+      _ <- insert (mkReviewAssignment paperId reviewerId "")
+      return ()
+    _ -> respondTagged badRequest
 
 {-@ getReviewers :: _ -> TaggedT<{\v -> IsChair v}, {\_ -> False}> _ _ @-}
 getReviewers :: PaperId -> Controller [Text]
