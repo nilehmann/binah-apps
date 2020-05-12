@@ -11,9 +11,9 @@ Wish
 
   insert @IsOwner
 
-  // update: 
-  // * If viewer is the owner
-  //   - Only description and accessLevel can be updated
+  -- update: 
+  -- * If viewer is the owner
+  --   - Only description and accessLevel can be updated
 
 Friendship
   user1 UserId
@@ -27,9 +27,9 @@ Friendship
     accepted == False
   }
 
-  // update: 
-  // * If viewer is user2 
-  //   - Only accepted can be updated
+  -- update: 
+  -- * If viewer is user2 
+  --   - Only accepted can be updated
 
 policy PublicOrFriends = \wish viewer ->
   wishAccessLevel wish == "public" ||
