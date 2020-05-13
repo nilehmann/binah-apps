@@ -86,8 +86,8 @@ assume combine :: forall < visibility1 :: Entity record -> Entity User -> Bool
       |- {v:(Entity record) | v == row1 && v == row2} <: {v:(Entity<update> record) | True} 
   }
 
-  { {v: (Entity<cap> record) | True } <: {v: (Entity<cap1> record) | True}}
-  { {v: (Entity<cap> record) | True } <: {v: (Entity<cap2> record) | True}}
+  { {v: (Entity<cap> record) | True} <: {v: (Entity<cap1> record) | True} }
+  { {v: (Entity<cap> record) | True} <: {v: (Entity<cap2> record) | True} }
   { row1 :: (Entity<cap1> record)
   , row2 :: (Entity<cap2> record) 
       |- {v:(Entity record) | v == row1 && v == row2} <: {v:(Entity<cap> record) | True} 
@@ -97,20 +97,19 @@ assume combine :: forall < visibility1 :: Entity record -> Entity User -> Bool
   , new :: Entity record
      |- {v: (Entity<policy old new> User) | True } <: {v: (Entity<policy1 old new> User) | True}
   }
-  { old :: Entity record
-  , new :: Entity record
+  { old :: Entity record , new :: Entity record
      |- {v: (Entity<policy old new> User) | True } <: {v: (Entity<policy2 old new> User) | True}
   }
   { old :: Entity record
   , new :: Entity record
-  , row1 :: (Entity<policy1 old new> User)
-  , row2 :: (Entity<policy2 old new> User) 
-      |- {v:(Entity User) | v == row1 && v == row2} <: {v:(Entity<policy old new> User) | True} 
+  , user1 :: (Entity<policy1 old new> User)
+  , user2 :: (Entity<policy2 old new> User) 
+      |- {v:(Entity User) | v == user1 && v == user2} <: {v:(Entity<policy old new> User) | True} 
   }
 
   Update<visibility1, update1, cap1, policy1> record
   -> Update<visibility2, update2, cap2, policy2> record
-  -> Update<visibility, update, cap, policy> record
+  -> Update<visibility,  update,  cap,  policy> record
 @-}
 combine :: Update record -> Update record -> Update record
 combine (Update us1) (Update us2) = Update (us1 ++ us2)
