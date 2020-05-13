@@ -33,6 +33,7 @@ forall < r  :: Entity record -> Bool
        , q2 :: Entity record -> Entity User -> Bool
        >.
   {row1 :: (Entity <r1> record), row2 :: (Entity <r2> record) |- {v:Entity record | v == row1 && v == row2} <: {v:(Entity <r> record) | True}}
+
   {row :: (Entity <r> record) |- {v:(Entity <q row> User) | True} <: {v:(Entity <q1 row> User) | True}}
   {row :: (Entity <r> record) |- {v:(Entity <q row> User) | True} <: {v:(Entity <q2 row> User) | True}}
 
@@ -68,17 +69,21 @@ forall < r  :: Entity record -> Bool
 
 {-@
 (==.) ::
-forall < policy :: Entity record -> Entity User -> Bool
+forall < querypolicy :: Entity record -> Entity User -> Bool
        , selector :: Entity record -> typ -> Bool
        , inverseselector :: typ -> Entity record -> Bool
        , fieldfilter :: typ -> Bool
        , filter :: Entity record -> Bool
        , r :: typ -> Bool
+       , capability :: Entity record -> Bool
+       , updatepolicy :: Entity record -> Entity record -> Entity User -> Bool
        >.
   { row :: (Entity record), value :: typ<r> |- {field:(typ<selector row>) | field == value} <: typ<fieldfilter> }
   { field :: typ<fieldfilter> |- {v:(Entity <inverseselector field> record) | True} <: {v:(Entity <filter> record) | True} }
 
-  EntityFieldWrapper<policy, selector, inverseselector> record typ -> typ<r> -> Filter<policy, filter> record
+  EntityFieldWrapper<querypolicy, selector, inverseselector, capability, updatepolicy> record typ 
+  -> typ<r>
+  -> Filter<querypolicy, filter> record
 @-}
 (==.) :: PersistField typ => EntityFieldWrapper record typ -> typ -> Filter record
 (EntityFieldWrapper field) ==. value = Filter [field Persist.==. value]
@@ -91,11 +96,15 @@ forall < policy :: Entity record -> Entity User -> Bool
        , fieldfilter :: typ -> Bool
        , filter :: Entity record -> Bool
        , r :: typ -> Bool
+       , capability :: Entity record -> Bool
+       , updatepolicy :: Entity record -> Entity record -> Entity User -> Bool
        >.
   { row :: (Entity record), value :: typ<r> |- {field:(typ<selector row>) | field != value} <: typ<fieldfilter> }
   { field :: typ<fieldfilter> |- {v:(Entity <inverseselector field> record) | True} <: {v:(Entity <filter> record) | True} }
 
-  EntityFieldWrapper<policy, selector, inverseselector> record typ -> typ<r> -> Filter<policy, filter> record
+  EntityFieldWrapper<policy, selector, inverseselector, capability, updatepolicy> record typ 
+  -> typ<r>
+  -> Filter<policy, filter> record
 @-}
 (!=.) :: PersistField typ => EntityFieldWrapper record typ -> typ -> Filter record
 (EntityFieldWrapper field) !=. value = Filter [field Persist.!=. value]
@@ -108,11 +117,15 @@ forall < policy :: Entity record -> Entity User -> Bool
        , fieldfilter :: typ -> Bool
        , filter :: Entity record -> Bool
        , r :: typ -> Bool
+       , capability :: Entity record -> Bool
+       , updatepolicy :: Entity record -> Entity record -> Entity User -> Bool
        >.
   { row :: (Entity record), value :: typ<r> |- {field:(typ<selector row>) | field == value} <: typ<fieldfilter> }
   { field :: typ<fieldfilter> |- {v:(Entity <inverseselector field> record) | True} <: {v:(Entity <filter> record) | True} }
 
-  EntityFieldWrapper<policy, selector, inverseselector> record typ -> [typ<r>] -> Filter<policy, filter> record
+  EntityFieldWrapper<policy, selector, inverseselector, capability, updatepolicy> record typ 
+  -> [typ<r>] 
+  -> Filter<policy, filter> record
 @-}
 (<-.) :: PersistField typ => EntityFieldWrapper record typ -> [typ] -> Filter record
 (EntityFieldWrapper field) <-. value = Filter [field Persist.<-. value]
