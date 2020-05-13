@@ -110,17 +110,23 @@ wishEdit wid = do
 {-@ updateWish :: _ -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ @-}
 updateWish :: WishId -> Controller ()
 updateWish id = do
-  params <- parseForm
-  case lookup "description" params of
-    -- ENFORCE: User is the owner of the wish
-    Just content -> updateWhere (wishId' ==. id) (wishDescription' `assign` content)
-    Nothing      -> return ()
+  viewer   <- requireAuthUser
+  viewerId <- project userId' viewer
+  let up = (wishDescription' `assign` "description")
+  let f  = (wishId' ==. id &&: wishOwner' ==. viewerId)
+  _ <- updateWhere f up
+  return ()
+  -- params <- parseForm
+  -- case lookup "description" params of
+  --   -- ENFORCE: User is the owner of the wish
+  --   Just content -> updateWhere (wishId' ==. id) (wishDescription' `assign` content)
+  --   Nothing      -> return ()
 
-  case lookup "accessLevel" params of
-    -- ENFORCE: User is the owner of the wish
-    Just accessLevel ->
-      updateWhere (wishId' ==. id) (wishAccessLevel' `assign` Text.unpack accessLevel)
-    Nothing -> return ()
+  -- case lookup "accessLevel" params of
+  --   -- ENFORCE: User is the owner of the wish
+  --   Just accessLevel ->
+  --     updateWhere (wishId' ==. id) (wishAccessLevel' `assign` Text.unpack accessLevel)
+  --   Nothing -> return ()
 
 -----------------------------------------------------------------------------------
 -- | Show Wish

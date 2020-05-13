@@ -72,7 +72,7 @@ data EntityFieldWrapper record typ < querypolicy :: Entity record -> Entity User
 @-}
 
 data EntityFieldWrapper record typ = EntityFieldWrapper (Persist.EntityField record typ)
-{-@ data variance EntityFieldWrapper covariant covariant invariant invariant invariant @-}
+{-@ data variance EntityFieldWrapper covariant covariant invariant invariant invariant invariant invariant @-}
 
 {-@ measure currentUser :: Entity User @-}
 
@@ -207,7 +207,7 @@ wishId' = EntityFieldWrapper WishId
   , {\row field  -> field == wishOwner (entityVal row)}
   , {\field row  -> field == wishOwner (entityVal row)}
   , {\old -> wishOwnerCap old}
-  , {\old new user -> entityKey user == wishOwner (entityVal old) => wishOwnerCap old}
+  , {\old new user -> wishOwnerCap old}
   > _ _
 @-}
 wishOwner' :: EntityFieldWrapper Wish UserId
@@ -220,7 +220,7 @@ wishOwner' = EntityFieldWrapper WishOwner
   , {\row field  -> field == wishDescription (entityVal row)}
   , {\field row  -> field == wishDescription (entityVal row)}
   , {\row -> wishDescriptionCap row}
-  , {\row _ _ -> wishDescriptionCap row}
+  , {\old _ user -> entityKey user == wishOwner (entityVal old) => wishDescriptionCap old}
   > _ _
 @-}
 wishDescription' :: EntityFieldWrapper Wish Text
@@ -233,7 +233,7 @@ wishDescription' = EntityFieldWrapper WishDescription
   , {\row field  -> field == wishAccessLevel (entityVal row)}
   , {\field row  -> field == wishAccessLevel (entityVal row)}
   , {\row -> wishAccessLevelCap row}
-  , {\row _ _ -> wishAccessLevelCap row}
+  , {\old _ user -> wishAccessLevelCap old}
   > _ _
 @-}
 wishAccessLevel' :: EntityFieldWrapper Wish String

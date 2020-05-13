@@ -26,7 +26,7 @@ newtype Update record < visibility :: Entity record -> Entity User -> Bool
                       , policy :: Entity record -> Entity record -> Entity User -> Bool
                       > = Update _ @-}
 newtype Update record = Update [Persist.Update record]
-{-@ data variance Update invariant invariant invariant @-}
+{-@ data variance Update invariant invariant invariant invariant invariant @-}
 
 -- For some reason the type is not exported if we use `=.`
 {-@ ignore assign @-}
@@ -118,6 +118,9 @@ instance Semigroup (Update record) where
 combineUpdates :: Update record -> Update record -> Update record
 combineUpdates (Update us1) (Update us2) = Update (us1 ++ us2)
 
+  -- { row :: (Entity<update> record) 
+  --     |- {v:(Entity<visibility row> User) | True} <: {v:(Entity<audience> User) | True} 
+  -- }
 
 -- TODO: Figure out what to do with the key
 {-@ ignore updateWhere @-}
@@ -130,9 +133,6 @@ assume updateWhere :: forall < visibility :: Entity record -> Entity User -> Boo
                              , querypolicy :: Entity record -> Entity User -> Bool
                              , filter :: Entity record -> Bool
                              >.
-  { row :: (Entity<update> record) 
-      |- {v:(Entity<visibility row> User) | True} <: {v:(Entity<audience> User) | True} 
-  }
 
   { old  :: (Entity<filter> record)
   , new  :: (Entity<update> record)
