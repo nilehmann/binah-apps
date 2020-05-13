@@ -68,7 +68,7 @@ forall < r  :: Entity record -> Bool
 
 {-@
 (==.) ::
-forall < policy :: Entity record -> Entity User -> Bool
+forall < querypolicy :: Entity record -> Entity User -> Bool
        , selector :: Entity record -> typ -> Bool
        , inverseselector :: typ -> Entity record -> Bool
        , fieldfilter :: typ -> Bool
@@ -78,7 +78,7 @@ forall < policy :: Entity record -> Entity User -> Bool
   { row :: (Entity record), value :: typ<r> |- {field:(typ<selector row>) | field == value} <: typ<fieldfilter> }
   { field :: typ<fieldfilter> |- {v:(Entity <inverseselector field> record) | True} <: {v:(Entity <filter> record) | True} }
 
-  EntityFieldWrapper<policy, selector, inverseselector> record typ -> typ<r> -> Filter<policy, filter> record
+  EntityFieldWrapper<querypolicy, selector, inverseselector> record typ -> typ<r> -> Filter<querypolicy, filter> record
 @-}
 (==.) :: PersistField typ => EntityFieldWrapper record typ -> typ -> Filter record
 (EntityFieldWrapper field) ==. value = Filter [field Persist.==. value]

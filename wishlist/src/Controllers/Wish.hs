@@ -113,13 +113,14 @@ updateWish id = do
   params <- parseForm
   case lookup "description" params of
     -- ENFORCE: User is the owner of the wish
-    Just content -> update id (wishDescription' `assign` content)
+    Just content -> updateWhere (wishId' ==. id) (wishDescription' `assign` content)
     Nothing      -> return ()
 
   case lookup "accessLevel" params of
     -- ENFORCE: User is the owner of the wish
-    Just accessLevel -> update id (wishAccessLevel' `assign` Text.unpack accessLevel)
-    Nothing          -> return ()
+    Just accessLevel ->
+      updateWhere (wishId' ==. id) (wishAccessLevel' `assign` Text.unpack accessLevel)
+    Nothing -> return ()
 
 -----------------------------------------------------------------------------------
 -- | Show Wish

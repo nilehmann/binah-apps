@@ -18,14 +18,8 @@ Wish
 Friendship
   user1 UserId
   user2 UserId
-  accepted Bool
 
-  assert [accepted => friends user1 user2]
-
-  insert {\row viewer -> 
-    friendshipUser1 row == entityKey viewer &&
-    accepted == False
-  }
+  assert [friends user1 user2]
 
   -- update: 
   -- * If viewer is user2 
