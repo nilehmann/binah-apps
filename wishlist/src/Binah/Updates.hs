@@ -6,7 +6,6 @@ module Binah.Updates
   ( assign
   , updateWhere
   , combine
-  , emptyUp
   )
 where
 
@@ -30,17 +29,6 @@ newtype Update record < visibility :: Entity record -> Entity User -> Bool
 newtype Update record = Update [Persist.Update record]
 {-@ data variance Update invariant invariant invariant invariant invariant @-}
 
-
-{-@ ignore emptyUp @-}
-{-@ 
-assume emptyUp :: Update < {\_ _   -> False}
-                         , {\_     -> True }
-                         , {\_     -> True}
-                         , {\_ _ _ -> True }
-                         > _
-@-}
-emptyUp :: Update record
-emptyUp = Update []
 
 -- For some reason the type is not exported if we use `=.`
 {-@ ignore assign @-}
@@ -138,6 +126,7 @@ assume updateWhere :: forall < visibility :: Entity record -> Entity User -> Boo
                              , updatepolicy :: Entity record -> Entity record -> Entity User -> Bool
                              , querypolicy :: Entity record -> Entity User -> Bool
                              , filter :: Entity record -> Bool
+                             , level :: Entity User -> Bool
                              >.
 
   { old  :: (Entity<filter> record)
@@ -150,9 +139,13 @@ assume updateWhere :: forall < visibility :: Entity record -> Entity User -> Boo
       |- {v:(Entity<visibility row> User) | True} <: {v:(Entity<audience> User) | True} 
   }
 
+  { row :: (Entity<filter> record) 
+      |- {v:(Entity<level> User) | True} <: {v:(Entity <querypolicy row> User) | True} 
+  }
+
   Filter<querypolicy, filter> record
   -> Update<visibility, update, capabilities, updatepolicy> record 
-  -> TaggedT<{\_ -> True}, audience> m ()
+  -> TaggedT<level, audience> m ()
 @-}
 updateWhere
   :: ( MonadTIO m
