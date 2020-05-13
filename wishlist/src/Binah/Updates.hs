@@ -137,7 +137,7 @@ assume updateWhere :: forall < visibility :: Entity record -> Entity User -> Boo
   { old  :: (Entity<filter> record)
   , new  :: (Entity<update> record)
   , user :: {v: (Entity<updatepolicy old new> User) | v == currentUser}
-      |- {v:(Entity record) | True} <: {v:(Entity<capabilities> record) | True}
+      |- {v:(Entity record) | v == old} <: {v:(Entity<capabilities> record) | True}
   }
 
   Filter<querypolicy, filter> record

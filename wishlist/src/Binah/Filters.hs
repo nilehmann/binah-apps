@@ -32,8 +32,6 @@ forall < r  :: Entity record -> Bool
        , q1 :: Entity record -> Entity User -> Bool
        , q2 :: Entity record -> Entity User -> Bool
        >.
-  {{v:(Entity <r> record) | True} <: {v:(Entity <r1> record) | True}}
-  {{v:(Entity <r> record) | True} <: {v:(Entity <r2> record) | True}}
   {row1 :: (Entity <r1> record), row2 :: (Entity <r2> record) |- {v:Entity record | v == row1 && v == row2} <: {v:(Entity <r> record) | True}}
 
   {row :: (Entity <r> record) |- {v:(Entity <q row> User) | True} <: {v:(Entity <q1 row> User) | True}}
