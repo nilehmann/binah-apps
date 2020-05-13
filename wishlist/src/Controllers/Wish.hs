@@ -112,11 +112,23 @@ updateWish :: WishId -> Controller ()
 updateWish id = do
   viewer   <- requireAuthUser
   viewerId <- project userId' viewer
-  let up = (wishDescription' `assign` "description")
-  let f  = (wishId' ==. id &&: wishOwner' ==. viewerId)
-  _ <- updateWhere f up
-  return ()
-  -- params <- parseForm
+  _        <- selectFirstOr404 (wishId' ==. id &&: wishOwner' ==. viewerId)
+  params   <- parseForm
+  case (lookup "description" params, lookup "accessLevel" params) of
+    (Just content, Just level) -> do
+      let
+        up =
+          combine (wishDescription' `assign` content) (wishAccessLevel' `assign` Text.unpack level)
+      updateWhere (wishId' ==. id) up
+    (Just content, Nothing) -> do
+      let up = wishDescription' `assign` content
+      updateWhere (wishId' ==. id) up
+    (Nothing, Just level) -> do
+      let up = wishAccessLevel' `assign` Text.unpack level
+      updateWhere (wishId' ==. id) up
+    _ -> return ()
+
+  -- params   <- parseForm
   -- case lookup "description" params of
   --   -- ENFORCE: User is the owner of the wish
   --   Just content -> updateWhere (wishId' ==. id) (wishDescription' `assign` content)

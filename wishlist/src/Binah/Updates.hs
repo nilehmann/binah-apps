@@ -5,6 +5,8 @@
 module Binah.Updates
   ( assign
   , updateWhere
+  , combine
+  , emptyUp
   )
 where
 
@@ -27,6 +29,18 @@ newtype Update record < visibility :: Entity record -> Entity User -> Bool
                       > = Update _ @-}
 newtype Update record = Update [Persist.Update record]
 {-@ data variance Update invariant invariant invariant invariant invariant @-}
+
+
+{-@ ignore emptyUp @-}
+{-@ 
+assume emptyUp :: Update < {\_ _   -> False}
+                         , {\_     -> True }
+                         , {\_     -> True}
+                         , {\_ _ _ -> True }
+                         > _
+@-}
+emptyUp :: Update record
+emptyUp = Update []
 
 -- For some reason the type is not exported if we use `=.`
 {-@ ignore assign @-}
@@ -55,72 +69,64 @@ assign (EntityFieldWrapper field) val = Update [field Persist.=. val]
 
 
 -- TODO: It's probably important to make sure multiple updates to the same field don't happen at once
+{-@ ignore combine @-}
 {-@
-instance Semigroup (Update record) where
-  assume (<>) :: forall < visibility1 :: Entity record -> Entity User -> Bool
-                        , visibility2 :: Entity record -> Entity User -> Bool
-                        , visibility  :: Entity record -> Entity User -> Bool
-                        , update1 :: Entity record -> Bool
-                        , update2 :: Entity record -> Bool
-                        , update  :: Entity record -> Bool
-                        , cap1 :: Entity record -> Bool
-                        , cap2 :: Entity record -> Bool
-                        , cap  :: Entity record -> Bool
-                        , policy1 :: Entity record -> Entity record -> Entity User -> Bool
-                        , policy2 :: Entity record -> Entity record -> Entity User -> Bool
-                        , policy  :: Entity record -> Entity record -> Entity User -> Bool
-                        >.
-    { row :: (Entity<update> record) 
-        |- {v:(Entity<visibility1 row> User) | True} <: {v:(Entity<visibility row>) | True} 
-    }
-    { row :: (Entity<update> record) 
-        |- {v:(Entity<visibility2 row> User) | True} <: {v:(Entity<visibility row>) | True} 
-    }
+assume combine :: forall < visibility1 :: Entity record -> Entity User -> Bool
+                         , visibility2 :: Entity record -> Entity User -> Bool
+                         , visibility  :: Entity record -> Entity User -> Bool
+                         , update1 :: Entity record -> Bool
+                         , update2 :: Entity record -> Bool
+                         , update  :: Entity record -> Bool
+                         , cap1 :: Entity record -> Bool
+                         , cap2 :: Entity record -> Bool
+                         , cap  :: Entity record -> Bool
+                         , policy1 :: Entity record -> Entity record -> Entity User -> Bool
+                         , policy2 :: Entity record -> Entity record -> Entity User -> Bool
+                         , policy  :: Entity record -> Entity record -> Entity User -> Bool
+                         >.
+  { row :: (Entity<update> record) 
+      |- {v:(Entity<visibility1 row> User) | True} <: {v:(Entity<visibility row> User) | True} 
+  }
+  { row :: (Entity<update> record) 
+      |- {v:(Entity<visibility2 row> User) | True} <: {v:(Entity<visibility row> User) | True} 
+  }
 
-    { {v: (Entity<update> record) | True } <: {v: (Entity<update1> record) | True}}
-    { {v: (Entity<update> record) | True } <: {v: (Entity<update2> record) | True}}
-    { row1 :: (Entity<update1> record)
-    , row2 :: (Entity<update2> record) 
-        |- {v:(Entity record) | v == row1 && v == row2} <: {v:(Entity<update> record) | True} 
-    }
+  { {v: (Entity<update> record) | True } <: {v: (Entity<update1> record) | True}}
+  { {v: (Entity<update> record) | True } <: {v: (Entity<update2> record) | True}}
+  { row1 :: (Entity<update1> record)
+  , row2 :: (Entity<update2> record) 
+      |- {v:(Entity record) | v == row1 && v == row2} <: {v:(Entity<update> record) | True} 
+  }
 
-    { {v: (Entity<cap> record) | True } <: {v: (Entity<cap1> record) | True}}
-    { {v: (Entity<cap> record) | True } <: {v: (Entity<cap2> record) | True}}
-    { row1 :: (Entity<cap1> record)
-    , row2 :: (Entity<cap2> record) 
-        |- {v:(Entity record) | v == row1 && v == row2} <: {v:(Entity<cap> record) | True} 
-    }
+  { {v: (Entity<cap> record) | True } <: {v: (Entity<cap1> record) | True}}
+  { {v: (Entity<cap> record) | True } <: {v: (Entity<cap2> record) | True}}
+  { row1 :: (Entity<cap1> record)
+  , row2 :: (Entity<cap2> record) 
+      |- {v:(Entity record) | v == row1 && v == row2} <: {v:(Entity<cap> record) | True} 
+  }
 
-    { old :: Entity record
-    , new :: Entity record
-       |- {v: (Entity<policy old new> User) | True } <: {v: (Entity<policy1 old new> User) | True}
-    }
-    { old :: Entity record
-    , new :: Entity record
-       |- {v: (Entity<policy old new> User) | True } <: {v: (Entity<policy2 old new> User) | True}
-    }
-    { old :: Entity record
-    , new :: Entity record
-    , row1 :: (Entity<policy1 old new> User)
-    , row2 :: (Entity<policy2 old new> User) 
-        |- {v:(Entity User) | v == row1 && v == row2} <: {v:(Entity<policy old new> User) | True} 
-    }
+  { old :: Entity record
+  , new :: Entity record
+     |- {v: (Entity<policy old new> User) | True } <: {v: (Entity<policy1 old new> User) | True}
+  }
+  { old :: Entity record
+  , new :: Entity record
+     |- {v: (Entity<policy old new> User) | True } <: {v: (Entity<policy2 old new> User) | True}
+  }
+  { old :: Entity record
+  , new :: Entity record
+  , row1 :: (Entity<policy1 old new> User)
+  , row2 :: (Entity<policy2 old new> User) 
+      |- {v:(Entity User) | v == row1 && v == row2} <: {v:(Entity<policy old new> User) | True} 
+  }
 
-    Update<visibility1, update1, cap1, policy1> 
-    -> Update<visibility2, update2, cap2, policy2> 
-    -> Update<visibility, update, cap, policy>
+  Update<visibility1, update1, cap1, policy1> record
+  -> Update<visibility2, update2, cap2, policy2> record
+  -> Update<visibility, update, cap, policy> record
 @-}
-instance Semigroup (Update record) where
-  (<>) = combineUpdates
+combine :: Update record -> Update record -> Update record
+combine (Update us1) (Update us2) = Update (us1 ++ us2)
 
--- TODO: Why does this make liquid crash w/out ignore
-{-@ ignore combineUpdates @-}
-combineUpdates :: Update record -> Update record -> Update record
-combineUpdates (Update us1) (Update us2) = Update (us1 ++ us2)
-
-  -- { row :: (Entity<update> record) 
-  --     |- {v:(Entity<visibility row> User) | True} <: {v:(Entity<audience> User) | True} 
-  -- }
 
 -- TODO: Figure out what to do with the key
 {-@ ignore updateWhere @-}
@@ -138,6 +144,10 @@ assume updateWhere :: forall < visibility :: Entity record -> Entity User -> Boo
   , new  :: (Entity<update> record)
   , user :: {v: (Entity<updatepolicy old new> User) | v == currentUser}
       |- {v:(Entity record) | v == old} <: {v:(Entity<capabilities> record) | True}
+  }
+
+  { row :: (Entity<update> record) 
+      |- {v:(Entity<visibility row> User) | True} <: {v:(Entity<audience> User) | True} 
   }
 
   Filter<querypolicy, filter> record

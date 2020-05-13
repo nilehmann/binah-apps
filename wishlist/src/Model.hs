@@ -233,7 +233,7 @@ wishDescription' = EntityFieldWrapper WishDescription
   , {\row field  -> field == wishAccessLevel (entityVal row)}
   , {\field row  -> field == wishAccessLevel (entityVal row)}
   , {\row -> wishAccessLevelCap row}
-  , {\old _ user -> wishAccessLevelCap old}
+  , {\old _ user -> entityKey user == wishOwner (entityVal old) => wishAccessLevelCap old}
   > _ _
 @-}
 wishAccessLevel' :: EntityFieldWrapper Wish String
