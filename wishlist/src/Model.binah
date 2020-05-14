@@ -11,6 +11,12 @@ Wish
 
   insert @IsOwner
 
+  update [ description 
+         ] 
+         {\old new viewer -> wishOwner old == entityKey viewer}
+
+  update accessLevel {\old new viewer -> wishOwner old == entityKey viewer}
+
   -- update: 
   -- * If viewer is the owner
   --   - Only description and accessLevel can be updated

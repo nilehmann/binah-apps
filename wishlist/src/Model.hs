@@ -8,7 +8,7 @@
 
 {-@ LIQUID "--compile-spec" @-}
 
-module Model
+module Model 
   ( EntityFieldWrapper(..)
   , migrateAll
   , BinahRecord
@@ -33,6 +33,7 @@ module Model
   , WishId
   , FriendshipId
   )
+
 where
 
 import           Database.Persist               ( Key )
@@ -120,7 +121,7 @@ persistentRecord (BinahRecord record) = record
   -> x_1: Text
   -> BinahRecord < 
        {\row -> userName (entityVal row) == x_0 && userUsername (entityVal row) == x_1}
-     , {\_ _ -> True}
+     , {\x y -> True}
      , {\row viewer -> False}
      > User
 @-}
@@ -144,11 +145,11 @@ userId' = EntityFieldWrapper UserId
 {-@ measure userNameCap :: Entity User -> Bool @-}
 
 {-@ assume userName' :: EntityFieldWrapper <
-    {\_ _ -> True}
+    {\x y -> True}
   , {\row field  -> field == userName (entityVal row)}
   , {\field row  -> field == userName (entityVal row)}
-  , {\row -> userNameCap row}
-  , {\row _ _ -> userNameCap row}
+  , {\old -> userNameCap old}
+  , {\x y z -> (True) => (userNameCap x)}
   > _ _
 @-}
 userName' :: EntityFieldWrapper User Text
@@ -157,11 +158,11 @@ userName' = EntityFieldWrapper UserName
 {-@ measure userUsernameCap :: Entity User -> Bool @-}
 
 {-@ assume userUsername' :: EntityFieldWrapper <
-    {\_ _ -> True}
+    {\x y -> True}
   , {\row field  -> field == userUsername (entityVal row)}
   , {\field row  -> field == userUsername (entityVal row)}
-  , {\row -> userUsernameCap row}
-  , {\row _ _ -> userUsernameCap row}
+  , {\old -> userUsernameCap old}
+  , {\x y z -> (True) => (userUsernameCap x)}
   > _ _
 @-}
 userUsername' :: EntityFieldWrapper User Text
@@ -203,11 +204,11 @@ wishId' = EntityFieldWrapper WishId
 {-@ measure wishOwnerCap :: Entity Wish -> Bool @-}
 
 {-@ assume wishOwner' :: EntityFieldWrapper <
-    {\_ _ -> True}
+    {\x y -> True}
   , {\row field  -> field == wishOwner (entityVal row)}
   , {\field row  -> field == wishOwner (entityVal row)}
   , {\old -> wishOwnerCap old}
-  , {\old new user -> wishOwnerCap old}
+  , {\x y z -> (True) => (wishOwnerCap x)}
   > _ _
 @-}
 wishOwner' :: EntityFieldWrapper Wish UserId
@@ -219,8 +220,8 @@ wishOwner' = EntityFieldWrapper WishOwner
     {\wish viewer -> wishAccessLevel (entityVal wish) == "public" || wishOwner (entityVal wish) == entityKey viewer || (wishAccessLevel (entityVal wish) == "friends" && friends (wishOwner (entityVal wish)) (entityKey viewer))}
   , {\row field  -> field == wishDescription (entityVal row)}
   , {\field row  -> field == wishDescription (entityVal row)}
-  , {\row -> wishDescriptionCap row}
-  , {\old _ user -> entityKey user == wishOwner (entityVal old) => wishDescriptionCap old}
+  , {\old -> wishDescriptionCap old}
+  , {\old new viewer -> (wishOwner (entityVal old) == entityKey viewer) => (wishDescriptionCap old)}
   > _ _
 @-}
 wishDescription' :: EntityFieldWrapper Wish Text
@@ -229,11 +230,11 @@ wishDescription' = EntityFieldWrapper WishDescription
 {-@ measure wishAccessLevelCap :: Entity Wish -> Bool @-}
 
 {-@ assume wishAccessLevel' :: EntityFieldWrapper <
-    {\_ _ -> True}
+    {\x y -> True}
   , {\row field  -> field == wishAccessLevel (entityVal row)}
   , {\field row  -> field == wishAccessLevel (entityVal row)}
-  , {\row -> wishAccessLevelCap row}
-  , {\old _ user -> entityKey user == wishOwner (entityVal old) => wishAccessLevelCap old}
+  , {\old -> wishAccessLevelCap old}
+  , {\old new viewer -> (wishOwner (entityVal old) == entityKey viewer) => (wishAccessLevelCap old)}
   > _ _
 @-}
 wishAccessLevel' :: EntityFieldWrapper Wish String
@@ -249,7 +250,7 @@ wishAccessLevel' = EntityFieldWrapper WishAccessLevel
   -> x_1: UserId
   -> BinahRecord < 
        {\row -> friendshipUser1 (entityVal row) == x_0 && friendshipUser2 (entityVal row) == x_1}
-     , {\_ _ -> True}
+     , {\x y -> True}
      , {\row viewer -> False}
      > Friendship
 @-}
@@ -273,11 +274,11 @@ friendshipId' = EntityFieldWrapper FriendshipId
 {-@ measure friendshipUser1Cap :: Entity Friendship -> Bool @-}
 
 {-@ assume friendshipUser1' :: EntityFieldWrapper <
-    {\_ _ -> True}
+    {\x y -> True}
   , {\row field  -> field == friendshipUser1 (entityVal row)}
   , {\field row  -> field == friendshipUser1 (entityVal row)}
-  , {\row -> friendshipUser1Cap row}
-  , {\row _ _ -> friendshipUser1Cap row}
+  , {\old -> friendshipUser1Cap old}
+  , {\x y z -> (True) => (friendshipUser1Cap x)}
   > _ _
 @-}
 friendshipUser1' :: EntityFieldWrapper Friendship UserId
@@ -286,11 +287,11 @@ friendshipUser1' = EntityFieldWrapper FriendshipUser1
 {-@ measure friendshipUser2Cap :: Entity Friendship -> Bool @-}
 
 {-@ assume friendshipUser2' :: EntityFieldWrapper <
-    {\_ _ -> True}
+    {\x y -> True}
   , {\row field  -> field == friendshipUser2 (entityVal row)}
   , {\field row  -> field == friendshipUser2 (entityVal row)}
-  , {\row -> friendshipUser2Cap row}
-  , {\row _ _ -> friendshipUser2Cap row}
+  , {\old -> friendshipUser2Cap old}
+  , {\x y z -> (True) => (friendshipUser2Cap x)}
   > _ _
 @-}
 friendshipUser2' :: EntityFieldWrapper Friendship UserId
