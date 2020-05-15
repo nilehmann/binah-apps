@@ -151,9 +151,16 @@ getWishData wishId = do
 
   level    <- project wishAccessLevel' wish
   owner    <- project wishOwner' wish
-  friends  <- selectFirst (friendshipUser1' ==. owner &&: friendshipUser2' ==. viewerId)
+  friends  <- selectFirst
+    (   friendshipUser1'
+    ==. owner
+    &&: friendshipUser2'
+    ==. viewerId
+    &&: friendshipStatus'
+    ==. "accepted"
+    )
 
-  descr    <- case (owner == viewerId, friends) of
+  descr <- case (owner == viewerId, friends) of
     (True, _)             -> project wishDescription' wish
     (_, Just _) | level == "friends" -> project wishDescription' wish
     _ | level == "public" -> project wishDescription' wish
@@ -172,3 +179,42 @@ wishRoute wishId = encodeUtf8 (Text.pack path)
 wishEditRoute :: WishId -> String
 wishEditRoute wishId = printf "/wish/%d/edit" wid where wid = fromSqlKey wishId
 
+
+{-@ 
+friendRequest 
+  :: {v: UserId | entityKey currentUser == v} 
+  -> UserId
+  -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ 
+@-}
+friendRequest :: UserId -> UserId -> Controller ()
+friendRequest user1 user2 = do
+  _ <- insert (mkFriendship user1 user2 "pending")
+  return ()
+
+{-@ 
+acceptFriendship
+  :: UserId
+  -> {v: UserId | entityKey currentUser == v} 
+  -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ 
+@-}
+acceptFriendship :: UserId -> UserId -> Controller ()
+acceptFriendship user1 user2 = do
+  let up = friendshipStatus' `assign` "accepted"
+  let f  = friendshipUser1' ==. user1 &&: friendshipUser2' ==. user2 -- &&: friendshipStatus ==. "pending"
+  updateWhere f up
+
+{-@ 
+rejectFriendship :: FriendshipId -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ 
+@-}
+rejectFriendship :: FriendshipId -> Controller ()
+rejectFriendship friendshipId = do
+  viewer     <- requireAuthUser
+  viewerId   <- project userId' viewer
+  friendship <- selectFirstOr404 (friendshipId' ==. friendshipId)
+  user2      <- project friendshipUser2' friendship
+  -- status     <- project friendshipStatus' friendship
+  if user2 == viewerId -- && status == "pending"
+    then do
+      let up = friendshipStatus' `assign` "rejected"
+      updateWhere (friendshipId' ==. friendshipId) up
+    else respondTagged forbidden

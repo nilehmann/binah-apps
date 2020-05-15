@@ -22,7 +22,7 @@ Wish
   update [ description, accessLevel ] { \old new user -> IsOwner old user }
 
   -- Ownership cannot be transferred
-  -- Note: what should be the default behavior?
+  -- Note: what should be the default behavior, updatable or not updatable?
   update [ owner ] { \old new user -> False }
 
 -- With the insert and update policies this is looking more as a *follows* relationship

@@ -29,6 +29,7 @@ module Model
   , friendshipId'
   , friendshipUser1'
   , friendshipUser2'
+  , friendshipStatus'
   , UserId
   , WishId
   , FriendshipId
@@ -61,6 +62,7 @@ Wish
 Friendship
   user1 UserId
   user2 UserId
+  status String
 |]
 
 {-@
@@ -205,7 +207,7 @@ wishId' = EntityFieldWrapper WishId
   , {\row field  -> field == wishOwner (entityVal row)}
   , {\field row  -> field == wishOwner (entityVal row)}
   , {\old -> wishOwnerCap old}
-  , {\old _ _ -> wishOwnerCap old}
+  , {\x_0 x_1 x_2 -> ((False)) => (wishOwnerCap x_0)}
   > _ _
 @-}
 wishOwner' :: EntityFieldWrapper Wish UserId
@@ -220,7 +222,7 @@ wishOwner' = EntityFieldWrapper WishOwner
   , {\row field  -> field == wishDescription (entityVal row)}
   , {\field row  -> field == wishDescription (entityVal row)}
   , {\old -> wishDescriptionCap old}
-  , {\x_0 x_1 x_2 -> ((wishOwner (entityVal x_0) == entityKey x_2)) => (wishDescriptionCap x_0)}
+  , {\x_0 x_1 x_2 -> ((IsOwner x_0 x_2)) => (wishDescriptionCap x_0)}
   > _ _
 @-}
 wishDescription' :: EntityFieldWrapper Wish Text
@@ -235,7 +237,7 @@ wishDescription' = EntityFieldWrapper WishDescription
   , {\row field  -> field == wishAccessLevel (entityVal row)}
   , {\field row  -> field == wishAccessLevel (entityVal row)}
   , {\old -> wishAccessLevelCap old}
-  , {\x_0 x_1 x_2 -> ((wishOwner (entityVal x_0) == entityKey x_2)) => (wishAccessLevelCap x_0)}
+  , {\x_0 x_1 x_2 -> ((IsOwner x_0 x_2)) => (wishAccessLevelCap x_0)}
   > _ _
 @-}
 wishAccessLevel' :: EntityFieldWrapper Wish String
@@ -245,17 +247,18 @@ wishAccessLevel' = EntityFieldWrapper WishAccessLevel
 {-@ mkFriendship :: 
      x_0: UserId
   -> x_1: UserId
+  -> x_2: String
   -> BinahRecord < 
-       {\row -> friendshipUser1 (entityVal row) == x_0 && friendshipUser2 (entityVal row) == x_1}
-     , {\_ _ -> True}
+       {\row -> friendshipUser1 (entityVal row) == x_0 && friendshipUser2 (entityVal row) == x_1 && friendshipStatus (entityVal row) == x_2}
+     , {\row user -> friendshipUser1 (entityVal row) == entityKey user && friendshipStatus (entityVal row) == "pending"}
      , {\x_0 x_1 -> False}
      > Friendship
 @-}
-mkFriendship x_0 x_1 = BinahRecord (Friendship x_0 x_1)
+mkFriendship x_0 x_1 x_2 = BinahRecord (Friendship x_0 x_1 x_2)
 
 {-@ invariant {v: Entity Friendship | v == getJust (entityKey v)} @-}
 
-{-@ invariant {v: Entity Friendship | friends (friendshipUser1 (entityVal v)) (friendshipUser2 (entityVal v))} @-}
+{-@ invariant {v: Entity Friendship | (friendshipStatus (entityVal v)) == "accepted" => friends (friendshipUser1 (entityVal v)) (friendshipUser2 (entityVal v))} @-}
 
 {-@ assume friendshipId' :: EntityFieldWrapper <
     {\row viewer -> True}
@@ -277,7 +280,7 @@ friendshipId' = EntityFieldWrapper FriendshipId
   , {\row field  -> field == friendshipUser1 (entityVal row)}
   , {\field row  -> field == friendshipUser1 (entityVal row)}
   , {\old -> friendshipUser1Cap old}
-  , {\old _ _ -> friendshipUser1Cap old}
+  , {\x_0 x_1 x_2 -> ((False)) => (friendshipUser1Cap x_0)}
   > _ _
 @-}
 friendshipUser1' :: EntityFieldWrapper Friendship UserId
@@ -292,11 +295,26 @@ friendshipUser1' = EntityFieldWrapper FriendshipUser1
   , {\row field  -> field == friendshipUser2 (entityVal row)}
   , {\field row  -> field == friendshipUser2 (entityVal row)}
   , {\old -> friendshipUser2Cap old}
-  , {\old _ _ -> friendshipUser2Cap old}
+  , {\x_0 x_1 x_2 -> ((False)) => (friendshipUser2Cap x_0)}
   > _ _
 @-}
 friendshipUser2' :: EntityFieldWrapper Friendship UserId
 friendshipUser2' = EntityFieldWrapper FriendshipUser2
+
+{-@ measure friendshipStatus :: Friendship -> String @-}
+
+{-@ measure friendshipStatusCap :: Entity Friendship -> Bool @-}
+
+{-@ assume friendshipStatus' :: EntityFieldWrapper <
+    {\_ _ -> True}
+  , {\row field  -> field == friendshipStatus (entityVal row)}
+  , {\field row  -> field == friendshipStatus (entityVal row)}
+  , {\old -> friendshipStatusCap old}
+  , {\x_0 x_1 x_2 -> ((friendshipUser2 (entityVal x_0) == entityKey x_2 && (friendshipStatus (entityVal x_1) == "accepted" || friendshipStatus (entityVal x_1) == "rejected"))) => (friendshipStatusCap x_0)}
+  > _ _
+@-}
+friendshipStatus' :: EntityFieldWrapper Friendship String
+friendshipStatus' = EntityFieldWrapper FriendshipStatus
 
 --------------------------------------------------------------------------------
 -- | Inline
