@@ -187,7 +187,7 @@ paperChair pid = do
   _         <- checkChairOr forbidden viewer
   viewerId  <- project userId' viewer
   req       <- request
-  _         <- if reqMethod req == methodPost then assignReviewer paperId else return ()
+  _         <- if reqMethod req == methodPost then assignReviewer viewer paperId else return ()
 
   paper     <- getPaper paperId
   -- TODO: we should filter pcs that are already reviewers here
@@ -196,9 +196,14 @@ paperChair pid = do
   reviewers <- getReviewers paperId
   respondHtml $ PaperChair paper (map (uncurry UserData) pcsData) reviewers
 
-{-@ assignReviewer :: _ -> TaggedT<{\v -> v == currentUser && IsChair v}, {\_ -> True}> _ _ @-}
-assignReviewer :: PaperId -> Controller ()
-assignReviewer paperId = do
+{-@ 
+assignReviewer 
+  :: {u: Entity User | IsChair u && u == currentUser}
+  -> PaperId
+  -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ 
+@-}
+assignReviewer :: Entity User -> PaperId -> Controller ()
+assignReviewer _ paperId = do
   params <- parseForm
   let reviewerId = lookup "reviewer" params <&> Text.unpack >>= readMaybe <&> toSqlKey
   case (reviewerId, currentStage == "review") of
