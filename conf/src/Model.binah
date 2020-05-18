@@ -10,58 +10,72 @@ User
   level String
 
 Paper
-  author UserId @PcOrAuthorOrAccepted
-  title Text    @PcOrAuthorOrAccepted
-  abstract Text @PcOrAuthorOrAccepted 
-  accepted Bool @PcOrPublic
+  author UserId
+  title Text
+  abstract Text
+  accepted Bool
 
   assert [isAuthor author entityKey]
   assert [accepted => isAccepted entityKey]
 
-  insert {\paper viewer -> 
-    paperAuthor paper == entityKey viewer && 
-    paperAccepted paper == False && 
+  read [ author, title, abstract ] @PcOrAuthorOrAccepted
+
+  read [ accepted ] @PcOrPublic
+
+  insert {\paper viewer ->
+    paperAuthor paper == entityKey viewer &&
+    paperAccepted paper == False &&
     currentStage == "submit"
   }
 
-  -- update: 
-  -- * If the viewer is the author and currentStage == SubmitStage:
-  --   - only title and abstract can be updated
-  -- * If the viewer is chair and stage == review:
-  --   - only accepted can be upated
+  update [ title, abstract ] {\old new viewer ->
+    entityKey viewer == paperAuthor old && currentStage == "submit"
+  }
+
+  update [ accepted ] {\old new viewer ->
+    IsChair viewer && currentStage == "review"
+  }
+
+  update [ author ] {\old new viewer -> False}
 
 ReviewAssignment
-  paper PaperId   @OnlyPc
-  user UserId     @OnlyPc
-  assignType Text @OnlyPc
+  paper PaperId
+  user UserId
+  assignType Text
 
   assert [isReviewer user paper]
 
-  insert {\row viewer -> 
-    IsChair viewer && 
-    IsPc (getJust (reviewAssignmentUser row)) && 
+  read [ paper, user, assignType ] @OnlyPc
+
+  insert {\row viewer ->
+    IsChair viewer &&
+    IsPc (getJust (reviewAssignmentUser row)) &&
     currentStage == "review"
   }
 
-  -- update: 
-  -- * if viewer is chair and stage == review
-  --   - Assignee has to be PC
+  update [ paper, user, assignType ] {\old new viewer -> False}
 
 Review
-  paper PaperId   @PcOrAuthorIfPublic
-  reviewer UserId @OnlyPc
-  content Text    @PcOrAuthorIfPublic
-  score Int       @PcOrAuthorIfPublic
+  paper PaperId
+  reviewer UserId
+  content Text
+  score Int
 
-  insert {\review viewer -> 
-    currentStage == "review" && 
-    reviewReviewer review == entityKey viewer && 
+  read [ paper, content, score ] @PcOrAuthorIfPublic
+  read [ reviewer ] @OnlyPc
+
+  insert {\review viewer ->
+    currentStage == "review" &&
+    reviewReviewer review == entityKey viewer &&
     isReviewer (entityKey viewer) (reviewPaper review)
   }
 
-  -- update: 
-  -- * If viewer is reviewer of the paper and stage == review
-  --   - everything can be updated
+  update [ paper, content, score ] {\old new viewer ->
+    isReviewer (entityKey viewer) (reviewPaper old) && currentStage == "review"
+  }
+
+  update [ reviewer ] {\old new viewer -> False}
+
 
 PaperCoauthor
   paper PaperId @PcOrAuthorOrAccepted'
@@ -89,7 +103,7 @@ policy PcOrAuthorOrAccepted' = \coauthor viewer ->
 
 policy OnlyPc = \row viewer -> IsPc viewer
 
-policy PcOrAuthorIfPublic = \review viewer -> 
+policy PcOrAuthorIfPublic = \review viewer ->
     IsPc viewer ||
     (currentStage == "public" &&
       isAuthor (entityKey viewer) (reviewPaper review))

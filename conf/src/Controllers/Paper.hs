@@ -103,7 +103,7 @@ paperEdit pid = do
   req      <- request
   if reqMethod req == methodPost
     then do
-      _ <- updatePaper paperId
+      _ <- updatePaper viewerId paperId
       respondTagged (redirectTo (paperRoute paperId))
     else do
       maybePaper <- getMyPaper viewerId paperId
@@ -111,19 +111,21 @@ paperEdit pid = do
         Nothing             -> respondTagged notFound
         Just (paperData, _) -> respondHtml $ PaperEdit paperId paperData
 
-{-@ updatePaper :: _ -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ @-}
-updatePaper :: PaperId -> Controller ()
-updatePaper paperId = do
+{-@ updatePaper
+  :: {v: UserId | v == entityKey currentUser}
+  -> PaperId
+  -> TaggedT<{\v -> v == currentUser}, {\_ -> True}> _ _
+@-}
+updatePaper :: UserId -> PaperId -> Controller ()
+updatePaper viewerId paperId = do
+  _      <- checkStageOr forbidden "submit"
   params <- parseForm
-  case lookup "title" params of
-    -- ENFORCE: Viewer is the author of the paper && stage == submit
-    Just title -> updateWhere (paperId' ==. paperId) (paperTitle' `assign` title)
-    Nothing    -> return ()
-
-  case lookup "abstract" params of
-    -- ENFORCE: Viewer is the author of the paper && stage == submit
-    Just abstract -> updateWhere (paperId' ==. paperId) (paperAbstract' `assign` abstract)
-    Nothing       -> return ()
+  case (lookup "title" params, lookup "abstract" params) of
+    (Just title, Just abstract) -> do
+      let up = (paperTitle' `assign` title) `combine` (paperAbstract' `assign` abstract)
+      updateWhere (paperId' ==. paperId &&: paperAuthor' ==. viewerId) up
+      return ()
+    _ -> return ()
 
 
 ------------------------------------------------------------------------------------------------
@@ -140,9 +142,9 @@ paperNew = do
   req      <- request
   if reqMethod req == methodPost then insertPaper viewerId else respondHtml PaperNew
 
-{-@ insertPaper :: 
-     {u:_ | u == entityKey currentUser} 
-  -> TaggedT<{\v -> v == currentUser}, {\_ -> True}> _ _ 
+{-@ insertPaper ::
+     {u:_ | u == entityKey currentUser}
+  -> TaggedT<{\v -> v == currentUser}, {\_ -> True}> _ _
 @-}
 insertPaper :: UserId -> Controller ()
 insertPaper authorId = do
@@ -194,11 +196,11 @@ paperChair pid = do
   reviewers <- getReviewers paperId
   respondHtml $ PaperChair paper (map (uncurry UserData) pcsData) reviewers
 
-{-@ 
-assignReviewer 
+{-@
+assignReviewer
   :: {u: Entity User | IsChair u && u == currentUser}
   -> PaperId
-  -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ 
+  -> TaggedT<{\_ -> True}, {\_ -> True}> _ _
 @-}
 assignReviewer :: Entity User -> PaperId -> Controller ()
 assignReviewer _ paperId = do

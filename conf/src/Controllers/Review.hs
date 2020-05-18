@@ -89,22 +89,26 @@ instance TemplateData ShowReview where
 
   toMustache (ShowReview review) = Mustache.object ["review" ~> review]
 
-{-@ updateReview :: _ -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ @-}
+{-@ updateReview :: ReviewId -> TaggedT<{\v -> v == currentUser}, {\_ -> True}> _ _ @-}
 updateReview :: ReviewId -> Controller ()
 updateReview reviewId = do
-  viewer <- requireAuthUser
-  isPC   <- pc viewer
-
-  when (not isPC || currentStage /= "review") (respondTagged forbidden)
+  viewer   <- requireAuthUser
+  viewerId <- project userId' viewer
+  _        <- checkPcOr forbidden viewer
+  _        <- checkStageOr forbidden "review"
+  review   <- selectFirstOr404 (reviewId' ==. reviewId)
+  paperId  <- project reviewPaper' review
+  _ <- selectFirstOr forbidden
+                     (reviewAssignmentPaper' ==. paperId &&: reviewAssignmentUser' ==. viewerId)
 
   params <- parseForm
-  case lookup "content" params of
-    Just content -> updateWhere (reviewId' ==. reviewId) (reviewContent' `assign` content)
-    Nothing      -> return ()
-
-  case lookup "score" params of
-    Just score -> updateWhere (reviewId' ==. reviewId) (reviewScore' `assign` read (show score))
-    Nothing    -> return ()
+  case (lookup "content" params, lookup "score" params) of
+    (Just content, Just score) -> do
+      let up1 = reviewContent' `assign` content
+      let up2 = reviewScore' `assign` read (Text.unpack score)
+      _ <- updateWhere (reviewId' ==. reviewId) (up1 `combine` up2)
+      return ()
+    _ -> return ()
 
 {-@ reviewShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
 reviewShow :: Int64 -> Controller ()
@@ -114,8 +118,11 @@ reviewShow rid = do
   viewerId <- project userId' viewer
 
   req      <- request
-
-  when (reqMethod req == methodPost) (updateReview reviewId)
+  if reqMethod req == methodPost
+    then do
+      _ <- updateReview reviewId
+      return ()
+    else return ()
 
   review <- selectFirstOr404 (reviewId' ==. reviewId)
   isPC   <- pc viewer
