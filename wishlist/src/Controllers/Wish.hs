@@ -38,36 +38,17 @@ import           Helpers
 import           Controllers
 import           Control.Monad                  ( when )
 
-newtype WishNew = WishNew String
-data WishEdit = WishEdit String WishData
-data WishData = WishData Text String
-
-instance ToMustache WishData where
-  toMustache (WishData descr level) = M.object ["description" ~> descr, "accessLevel" ~> level]
-
-instance ToMustache WishNew where
-  toMustache (WishNew action) = M.object
-    ["action" ~> action, "accessLevels" ~> map (uncurry (getAccessLevel False)) accessLevels]
-
-instance ToMustache WishEdit where
-  toMustache (WishEdit action (WishData descr level)) = M.object
-    [ "action" ~> action
-    , "description" ~> descr
-    , "accessLevels"
-      ~> [ getAccessLevel (value == level) value label | (value, label) <- accessLevels ]
-    ]
-
-accessLevels :: [(String, String)]
-accessLevels = [("private", "Private"), ("public", "Public"), ("friends", "Friends")]
-
-getAccessLevel :: Bool -> String -> String -> M.Value
-getAccessLevel isSelected value label = M.object
-  ["value" ~> value, "label" ~> label, "selected" ~> (selected :: String)]
-  where selected = if isSelected then "selected" else ""
-
 -----------------------------------------------------------------------------------
 -- | New Wish
 -----------------------------------------------------------------------------------
+
+newtype WishNew = WishNew String
+
+instance TemplateData WishNew where
+  templateFile = "wish.edit.html.mustache"
+  toMustache (WishNew action) = M.object
+    ["action" ~> action, "accessLevels" ~> map (uncurry (getAccessLevel False)) accessLevels]
+
 
 {-@ wishNew :: TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
 wishNew :: Controller ()
@@ -75,9 +56,7 @@ wishNew = do
   viewer   <- requireAuthUser
   viewerId <- project userId' viewer
   req      <- request
-  if reqMethod req == methodPost
-    then insertWish viewerId
-    else respondHtml "wish.edit.html.mustache" (WishNew "/wish")
+  if reqMethod req == methodPost then insertWish viewerId else respondHtml (WishNew "/wish")
 
 
 {-@ insertWish :: {v: UserId | v == entityKey currentUser} -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
@@ -97,6 +76,19 @@ insertWish userId = do
 -- | Edit Wish
 -----------------------------------------------------------------------------------
 
+data WishEdit = WishEdit String WishData
+
+instance TemplateData WishEdit where
+  templateFile = "wish.edit.html.mustache"
+
+  toMustache (WishEdit action (WishData descr level)) = M.object
+    [ "action" ~> action
+    , "description" ~> descr
+    , "accessLevels"
+      ~> [ getAccessLevel (value == level) value label | (value, label) <- accessLevels ]
+    ]
+
+
 {-@ wishEdit :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
 wishEdit :: Int64 -> Controller ()
 wishEdit wid = do
@@ -104,7 +96,7 @@ wishEdit wid = do
   req <- request
   when (reqMethod req == methodPost) (updateWish wishId)
   wishData <- getWishData wishId
-  respondHtml "wish.edit.html.mustache" (WishEdit (wishEditRoute wishId) wishData)
+  respondHtml (WishEdit (wishEditRoute wishId) wishData)
 
 
 {-@ updateWish :: _ -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ @-}
@@ -131,12 +123,18 @@ updateWish id = do
 -- | Show Wish
 -----------------------------------------------------------------------------------
 
+newtype WishShow = WishShow WishData
+
+instance TemplateData WishShow where
+  templateFile = "wish.show.html.mustache"
+  toMustache (WishShow wishData) = M.object ["wish" ~> wishData]
+
 {-@ wishShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
 wishShow :: Int64 -> Controller ()
 wishShow wid = do
   let wishId = toSqlKey wid
   wishData <- getWishData wishId
-  respondHtml "wish.show.html.mustache" wishData
+  respondHtml (WishShow wishData)
 
 -----------------------------------------------------------------------------------
 -- | Misc
@@ -218,3 +216,20 @@ rejectFriendship friendshipId = do
       let up = friendshipStatus' `assign` "rejected"
       updateWhere (friendshipId' ==. friendshipId) up
     else respondTagged forbidden
+
+-----------------------------------------------------------------------------------
+-- | WishData
+-----------------------------------------------------------------------------------
+
+data WishData = WishData Text String
+
+instance ToMustache WishData where
+  toMustache (WishData descr level) = M.object ["description" ~> descr, "accessLevel" ~> level]
+
+accessLevels :: [(String, String)]
+accessLevels = [("private", "Private"), ("public", "Public"), ("friends", "Friends")]
+
+getAccessLevel :: Bool -> String -> String -> M.Value
+getAccessLevel isSelected value label = M.object
+  ["value" ~> value, "label" ~> label, "selected" ~> (selected :: String)]
+  where selected = if isSelected then "selected" else ""

@@ -30,8 +30,9 @@ import           Controllers
 
 newtype UserData = UserData [WishData]
 
-instance ToMustache UserData where
-    toMustache (UserData wishes) = Mustache.object ["wishes" ~> map toMustache wishes]
+instance TemplateData UserData where
+    templateFile = "user.show.html.mustache"
+    toMustache (UserData wishes) = Mustache.object ["wishes" ~> wishes]
 
 data WishData = WishData { wishDataId :: WishId, wishDataDescription :: Text }
 
@@ -43,9 +44,16 @@ instance ToMustache WishData where
 userShow :: Int64 -> Controller ()
 userShow uid = do
     let userId = toSqlKey uid
-    viewer     <- requireAuthUser
-    viewerId   <- project userId' viewer
-    friends    <- selectFirst (friendshipUser1' ==. userId &&: friendshipUser2' ==. viewerId)
+    viewer   <- requireAuthUser
+    viewerId <- project userId' viewer
+    friends  <- selectFirst
+        (   friendshipUser1'
+        ==. userId
+        &&: friendshipUser2'
+        ==. viewerId
+        &&: friendshipStatus'
+        ==. "accepted"
+        )
     wishesData <- case (viewerId == userId, friends) of
         (True, _) -> do
             wishes <- selectList (wishOwner' ==. userId)
@@ -57,4 +65,4 @@ userShow uid = do
         _ -> do
             wishes <- selectList (wishOwner' ==. userId &&: wishAccessLevel' ==. "public")
             projectList2 (wishId', wishDescription') wishes
-    respondHtml "user.show.html.mustache" (UserData (map (uncurry WishData) wishesData))
+    respondHtml (UserData (map (uncurry WishData) wishesData))
