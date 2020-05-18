@@ -99,11 +99,11 @@ updateReview reviewId = do
 
   params <- parseForm
   case lookup "content" params of
-    Just content -> update reviewId (reviewContent' `assign` content)
+    Just content -> updateWhere (reviewId' ==. reviewId) (reviewContent' `assign` content)
     Nothing      -> return ()
 
   case lookup "score" params of
-    Just score -> update reviewId (reviewScore' `assign` read (show score))
+    Just score -> updateWhere (reviewId' ==. reviewId) (reviewScore' `assign` read (show score))
     Nothing    -> return ()
 
 {-@ reviewShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}

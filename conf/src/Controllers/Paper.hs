@@ -24,7 +24,6 @@ import           Text.Printf                    ( printf )
 import           Text.Read                      ( readMaybe )
 import           Frankie
 
-
 import           Binah.Core
 import           Binah.Actions
 import           Binah.Filters
@@ -39,7 +38,6 @@ import           Model
 import           Helpers
 import           Controllers
 import           Control.Monad                  ( when )
-
 
 ------------------------------------------------------------------------------------------------
 -- | Show Paper
@@ -119,12 +117,12 @@ updatePaper paperId = do
   params <- parseForm
   case lookup "title" params of
     -- ENFORCE: Viewer is the author of the paper && stage == submit
-    Just title -> update paperId (paperTitle' `assign` title)
+    Just title -> updateWhere (paperId' ==. paperId) (paperTitle' `assign` title)
     Nothing    -> return ()
 
   case lookup "abstract" params of
     -- ENFORCE: Viewer is the author of the paper && stage == submit
-    Just abstract -> update paperId (paperAbstract' `assign` abstract)
+    Just abstract -> updateWhere (paperId' ==. paperId) (paperAbstract' `assign` abstract)
     Nothing       -> return ()
 
 
