@@ -1,0 +1,3 @@
+[submodule "wishlist/src/Binah"]
+	path = wishlist/src/Binah
+	url = git@github.com:PLSysSec/binah.git
