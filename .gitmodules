@@ -4,3 +4,6 @@
 [submodule "conf/src/Binah"]
 	path = conf/src/Binah
 	url = git@github.com:PLSysSec/binah.git
+[submodule "covid/server/src/Binah"]
+	path = covid/server/src/Binah
+	url = git@github.com:PLSysSec/binah.git
