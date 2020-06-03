@@ -21,6 +21,7 @@ import           Database.Persist.Sqlite        ( SqlBackend
                                                 )
 import           System.FilePath               as P
 import           System.Directory
+import           System.Environment
 import qualified Data.ByteString.Lazy          as LBS
 import           Network.Mime
 import           Frankie.Config
@@ -88,10 +89,10 @@ runServer h p = runNoLoggingT $ do
 
 getAwsConfig :: IO AWSConfig
 getAwsConfig = do
-    let accessKey = "AKIA2SO5WDU4VOFM2Q7F"
-    let secretKey = "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"
-    env <- AWS.newEnv $ AWS.FromKeys (AWS.AccessKey $ T.encodeUtf8 accessKey)
-                                     (AWS.SecretKey $ T.encodeUtf8 secretKey)
+    accessKey <- getEnv "SOCIAL_DISTANCING_AWS_ACCESS_KEY"
+    secretKey <- getEnv "SOCIAL_DISTANCING_AWS_SECRET_KEY"
+    env       <- AWS.newEnv $ AWS.FromKeys (AWS.AccessKey $ T.encodeUtf8 $ T.pack accessKey)
+                                           (AWS.SecretKey $ T.encodeUtf8 $ T.pack secretKey)
     return $ AWSConfig { awsAuth   = env ^. AWS.envAuth
                        , awsRegion = AWS.NorthCalifornia
                        , awsBucket = S3.BucketName "binah-social-distancing"
