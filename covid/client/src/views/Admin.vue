@@ -197,7 +197,7 @@ function randomString() {
 
 function randomJitsiLink() {
   const r = randomString() + randomString();
-  return `https://meet.jitsi.si/${r}`;
+  return `https://meet.jit.si/${r}`;
 }
 
 @Component
@@ -231,6 +231,7 @@ export default class SignIn extends Vue {
 
   add() {
     const n = this.oldRooms.length + this.newRooms.length;
+    // Using the golden ratio means that colors get evenly spread out and never overlap.
     const hue = (n * GOLDEN_RATIO) % 1;
     const [r, g, b] = hslToRgb(hue, 0.8, 0.6);
     this.newRooms.push({
