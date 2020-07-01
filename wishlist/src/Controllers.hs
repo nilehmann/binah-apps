@@ -25,19 +25,14 @@ import           Binah.Actions
 import           Model
 
 data Config = Config
-  { configBackend :: SqlBackend
-  , configTemplateCache :: !(MVar.MVar Mustache.TemplateCache)
+  { configTemplateCache :: !(MVar.MVar Mustache.TemplateCache)
   , configAuthMethod :: !(AuthMethod (Entity User) Controller)
   }
-
 
 type Controller = TaggedT (ReaderT SqlBackend (ConfigT Config (ControllerT TIO)))
 
 instance HasTemplateCache Config where
   getTemplateCache = configTemplateCache
-
-instance HasSqlBackend Config where
-  getSqlBackend = configBackend
 
 instance HasAuthMethod (Entity User) Controller Config where
   getAuthMethod = configAuthMethod

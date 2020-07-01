@@ -34,18 +34,13 @@ import           Controllers.User               ( userShow )
 import           Model
 
 
-setup :: MonadIO m => ReaderT SqlBackend m Config
-setup = do
+readConfig :: MonadIO m => m Config
+readConfig = do
     templateCache <- liftIO $ MVar.newMVar mempty
-    runMigration migrateAll
+    return $ Config { configTemplateCache = templateCache, configAuthMethod = httpAuthDb }
 
-    Persistent.insert (persistentRecord (mkUser "Nico" "nico"))
-
-    backend <- ask
-    return $ Config { configBackend       = backend
-                    , configTemplateCache = templateCache
-                    , configAuthMethod    = httpAuthDb
-                    }
+initDB :: IO ()
+initDB = runSqlite "db.sqlite" (runMigration migrateAll)
 
 {-@ ignore httpAuthDb @-}
 httpAuthDb :: AuthMethod (Entity User) Controller
@@ -54,12 +49,13 @@ httpAuthDb = httpBasicAuth $ \username _password -> selectFirst (userName' ==. u
 
 runServer :: IO ()
 runServer = runSqlite "db.sqlite" $ do
-    cfg <- setup
+    backend <- ask
+    cfg     <- readConfig
     liftIO . runFrankieServer "dev" $ do
         mode "dev" $ do
             host "localhost"
             port 3000
-            initWith $ configure cfg . reading backend . unTag
+            initWithT $ mapTaggedT (configure cfg . flip runReaderT backend)
         dispatch $ do
             get "/user/:uid" userShow
             get "/wish"      wishNew

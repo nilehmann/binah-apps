@@ -8,7 +8,7 @@ Wish
   owner UserId
   description Text
   accessLevel String
-  
+
   -- You can read the description if one the following holds:
   -- 1. You are the owner of the wish.
   -- 2. The wish has "public" access .
@@ -22,7 +22,6 @@ Wish
   update [ description, accessLevel ] { \old new user -> IsOwner old user }
 
   -- Ownership cannot be transferred
-  -- Note: what should be the default behavior, updatable or not updatable?
   update [ owner ] { \old new user -> False }
 
 -- With the insert and update policies this is looking more as a *follows* relationship
@@ -33,9 +32,9 @@ Friendship
   status String
 
   -- User1 is friends with user2 if there's is an accepted relationship
-  assert [status == "accepted" => friends user1 user2]
+  assert {status == "accepted" => friends user1 user2}
 
-  -- The session user can create a relationship if they create it as "pending" and they set 
+  -- The session user can create a relationship if they create it as "pending" and they set
   -- themselves as the first user.
   insert { \row user -> friendshipUser1 row == entityKey user && friendshipStatus row == "pending" }
 
@@ -43,10 +42,10 @@ Friendship
   -- cannot set it again as pending.
   -- Optional: the status can only be modified if it is "pending", i.e., you can only modify the
   -- relationship once and either accept it or reject it.
-  update 
-    [ status ] 
-    { \old new user -> 
-        friendshipUser2 old == entityKey user && 
+  update
+    [ status ]
+    { \old new user ->
+        friendshipUser2 old == entityKey user &&
         -- Optional:
         -- friendshipStatus old == "pending" &&
         (friendshipStatus new == "accepted" || friendshipStatus new == "rejected")
@@ -63,4 +62,3 @@ policy PublicOrFriends = \wish viewer ->
 
 policy IsOwner = \wish viewer ->
   wishOwner wish == entityKey viewer
-  
