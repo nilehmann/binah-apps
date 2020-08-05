@@ -32,7 +32,7 @@ instance TemplateData ProfileData where
   toMustache (ProfileData name affiliation email) =
     Mustache.object ["name" ~> name, "affiliation" ~> affiliation, "email" ~> email]
 
-{-@ profileShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
+{-@ profileShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ _ @-}
 profileShow :: Int64 -> Controller ()
 profileShow uid = do
   let userId = toSqlKey uid

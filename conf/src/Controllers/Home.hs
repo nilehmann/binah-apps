@@ -44,7 +44,7 @@ data PaperData = PaperData
   , paperDataTitle :: Text
   }
 
-{-@ homeAuthor :: TaggedT<{\_ -> False}, {\_ -> True}> _ _@-}
+{-@ homeAuthor :: TaggedT<{\_ -> False}, {\_ -> True}> _ _ _ @-}
 homeAuthor :: Controller ()
 homeAuthor = do
   viewer    <- requireAuthUser
@@ -53,7 +53,7 @@ homeAuthor = do
   paperData <- projectList2 (paperId', paperTitle') papers
   respondHtml $ HomeAuthor (map (uncurry PaperData) paperData)
 
-{-@ homeChair :: TaggedT<{\_ -> False}, {\_ -> True}> _ _@-}
+{-@ homeChair :: TaggedT<{\_ -> False}, {\_ -> True}> _ _ _ @-}
 homeChair :: Controller ()
 homeChair = do
   viewer <- requireAuthUser
@@ -64,4 +64,3 @@ homeChair = do
       papers    <- selectList trueF
       paperData <- projectList2 (paperId', paperTitle') papers
       respondHtml $ HomeChair (map (uncurry PaperData) paperData)
-

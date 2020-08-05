@@ -7,9 +7,6 @@ packages:
 - completed:
     size: 17908
     url: https://github.com/PLSysSec/frankie/archive/8894b528847a9f3bdef7ec47e905fc81081c2940.tar.gz
-    cabal-file:
-      size: 2796
-      sha256: d101826c17f517b295477a0c60369ded2e5f951282bed6b7d95cf06f0dca0bf1
     name: frankie
     version: 0.0.0.1
     sha256: 79e202bd6bf8316aa402be2554ac5f5712724a199e721438d0b764c61e6913c2
@@ -20,7 +17,7 @@ packages:
     url: https://github.com/PLSysSec/frankie/archive/8894b528847a9f3bdef7ec47e905fc81081c2940.tar.gz
 snapshots:
 - completed:
-    size: 525662
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/15.yaml
-    sha256: c5e673e5723931b64ef2eb5004f6d9ea3c95b58d48388dbc4de6f66b97c81f7a
-  original: lts-14.15
+    size: 496111
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/15/14.yaml
+    sha256: c442d702d66b8c129b3473a32c609050aabf1dc2f8e8502402c143271a8fb141
+  original: lts-15.14

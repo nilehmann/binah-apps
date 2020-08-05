@@ -15,8 +15,8 @@ Paper
   abstract Text
   accepted Bool
 
-  assert [isAuthor author entityKey]
-  assert [accepted => isAccepted entityKey]
+  assert {isAuthor author entityKey}
+  assert {accepted => isAccepted entityKey}
 
   read [ author, title, abstract ] @PcOrAuthorOrAccepted
 
@@ -43,7 +43,7 @@ ReviewAssignment
   user UserId
   assignType Text
 
-  assert [isReviewer user paper]
+  assert {isReviewer user paper}
 
   read [ paper, user, assignType ] @OnlyPc
 

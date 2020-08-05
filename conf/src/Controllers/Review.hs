@@ -54,10 +54,9 @@ instance TemplateData EditReview where
   toMustache (EditReview reviewId review) =
     Mustache.object ["action" ~> reviewEditRoute reviewId, "review" ~> review]
 
-{-@ reviewNew :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
-reviewNew :: Int64 -> Controller ()
-reviewNew pid = do
-  let paperId = toSqlKey pid
+{-@ reviewNew :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ _ @-}
+reviewNew :: PaperId -> Controller ()
+reviewNew paperId = do
   viewer   <- requireAuthUser
   viewerId <- project userId' viewer
   _        <- checkPcOr forbidden viewer
@@ -89,7 +88,7 @@ instance TemplateData ShowReview where
 
   toMustache (ShowReview review) = Mustache.object ["review" ~> review]
 
-{-@ updateReview :: ReviewId -> TaggedT<{\v -> v == currentUser}, {\_ -> True}> _ _ @-}
+{-@ updateReview :: ReviewId -> TaggedT<{\v -> v == currentUser}, {\_ -> True}> _ _ _ @-}
 updateReview :: ReviewId -> Controller ()
 updateReview reviewId = do
   viewer   <- requireAuthUser
@@ -110,10 +109,9 @@ updateReview reviewId = do
       return ()
     _ -> return ()
 
-{-@ reviewShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
-reviewShow :: Int64 -> Controller ()
-reviewShow rid = do
-  let reviewId = toSqlKey rid
+{-@ reviewShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ _ @-}
+reviewShow :: ReviewId -> Controller ()
+reviewShow reviewId = do
   viewer   <- requireAuthUser
   viewerId <- project userId' viewer
 
