@@ -19,9 +19,8 @@ import qualified Text.Mustache.Types           as Mustache
 import           Binah.Core
 import           Binah.Frankie
 import           Binah.Infrastructure
-import           Binah.Templates
 import           Binah.Filters
-import           Binah.Actions
+import           Binah.Templates
 import           Model
 
 data Config = Config
@@ -29,7 +28,7 @@ data Config = Config
   , configAuthMethod :: !(AuthMethod (Entity User) Controller)
   }
 
-type Controller = TaggedT (ReaderT SqlBackend (ConfigT Config (ControllerT TIO)))
+type Controller = TaggedT (Entity User) (ReaderT SqlBackend (ConfigT Config (ControllerT TIO)))
 
 instance HasTemplateCache Config where
   getTemplateCache = configTemplateCache
@@ -37,8 +36,8 @@ instance HasTemplateCache Config where
 instance HasAuthMethod (Entity User) Controller Config where
   getAuthMethod = configAuthMethod
 
-{-@ respondHtml :: _ -> TaggedT<{\_ -> True}, {\v -> v == currentUser}> _ _ @-}
+{-@ respondHtml :: d -> TaggedT<{\_ -> True}, {\v -> v == currentUser}> _ _ _ @-}
 respondHtml :: TemplateData d => d -> Controller b
 respondHtml d = do
   page <- renderTemplate d
-  respondTagged . okHtml . ByteString.fromStrict . encodeUtf8 $ page
+  respondTagged (okHtml (ByteString.fromStrict (encodeUtf8 page)))

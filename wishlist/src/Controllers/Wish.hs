@@ -50,7 +50,7 @@ instance TemplateData WishNew where
     ["action" ~> action, "accessLevels" ~> map (uncurry (getAccessLevel False)) accessLevels]
 
 
-{-@ wishNew :: TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
+{-@ wishNew :: TaggedT<{\_ -> False}, {\_ -> True}> _ _ _ @-}
 wishNew :: Controller ()
 wishNew = do
   viewer   <- requireAuthUser
@@ -59,7 +59,11 @@ wishNew = do
   if reqMethod req == methodPost then insertWish viewerId else respondHtml (WishNew "/wish")
 
 
-{-@ insertWish :: {v: UserId | v == entityKey currentUser} -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
+{-@
+insertWish
+  :: {v: UserId | v == entityKey currentUser}
+  -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ _
+@-}
 insertWish :: UserId -> Controller ()
 insertWish userId = do
   params <- parseForm
@@ -89,7 +93,7 @@ instance TemplateData WishEdit where
     ]
 
 
-{-@ wishEdit :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
+{-@ wishEdit :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ _ @-}
 wishEdit :: Int64 -> Controller ()
 wishEdit wid = do
   let wishId = toSqlKey wid
@@ -99,7 +103,7 @@ wishEdit wid = do
   respondHtml (WishEdit (wishEditRoute wishId) wishData)
 
 
-{-@ updateWish :: _ -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ @-}
+{-@ updateWish :: _ -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ _ @-}
 updateWish :: WishId -> Controller ()
 updateWish id = do
   viewer   <- requireAuthUser
@@ -129,7 +133,7 @@ instance TemplateData WishShow where
   templateFile = "wish.show.html.mustache"
   toMustache (WishShow wishData) = M.object ["wish" ~> wishData]
 
-{-@ wishShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
+{-@ wishShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ _ @-}
 wishShow :: Int64 -> Controller ()
 wishShow wid = do
   let wishId = toSqlKey wid
@@ -140,7 +144,7 @@ wishShow wid = do
 -- | Misc
 -----------------------------------------------------------------------------------
 
-{-@ getWishData :: _ -> TaggedT<{\v -> currentUser == v}, {\v -> True}> _ _ @-}
+{-@ getWishData :: _ -> TaggedT<{\v -> currentUser == v}, {\v -> True}> _ _ _ @-}
 getWishData :: WishId -> Controller WishData
 getWishData wishId = do
   viewer   <- requireAuthUser
@@ -178,22 +182,22 @@ wishEditRoute :: WishId -> String
 wishEditRoute wishId = printf "/wish/%d/edit" wid where wid = fromSqlKey wishId
 
 
-{-@ 
-friendRequest 
-  :: {v: UserId | entityKey currentUser == v} 
+{-@
+friendRequest
+  :: {v: UserId | entityKey currentUser == v}
   -> UserId
-  -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ 
+  -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ _
 @-}
 friendRequest :: UserId -> UserId -> Controller ()
 friendRequest user1 user2 = do
   _ <- insert (mkFriendship user1 user2 "pending")
   return ()
 
-{-@ 
+{-@
 acceptFriendship
   :: UserId
-  -> {v: UserId | entityKey currentUser == v} 
-  -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ 
+  -> {v: UserId | entityKey currentUser == v}
+  -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ _
 @-}
 acceptFriendship :: UserId -> UserId -> Controller ()
 acceptFriendship user1 user2 = do
@@ -201,8 +205,8 @@ acceptFriendship user1 user2 = do
   let f  = friendshipUser1' ==. user1 &&: friendshipUser2' ==. user2 -- &&: friendshipStatus ==. "pending"
   updateWhere f up
 
-{-@ 
-rejectFriendship :: FriendshipId -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ 
+{-@
+rejectFriendship :: FriendshipId -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ _
 @-}
 rejectFriendship :: FriendshipId -> Controller ()
 rejectFriendship friendshipId = do

@@ -12,7 +12,6 @@ import           Database.Persist.Sql           ( fromSqlKey
                                                 )
 
 import           Binah.Core
-import           Model
 
 outerJoinBy :: Eq key => (a -> key) -> (b -> key) -> (a -> Maybe b -> c) -> [a] -> [b] -> [c]
 outerJoinBy xsKey ysKey f xs ys =
