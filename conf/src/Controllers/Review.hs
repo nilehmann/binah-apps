@@ -88,7 +88,7 @@ instance TemplateData ShowReview where
 
   toMustache (ShowReview review) = Mustache.object ["review" ~> review]
 
-{-@ updateReview :: ReviewId -> TaggedT<{\v -> currentUser v}, {\_ -> True}> _ _ _ @-}
+{-@ updateReview :: ReviewId -> TaggedT<{\v -> v == currentUser 0}, {\_ -> True}> _ _ _ @-}
 updateReview :: ReviewId -> Controller ()
 updateReview reviewId = do
   viewer   <- requireAuthUser

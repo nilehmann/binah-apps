@@ -112,9 +112,9 @@ paperEdit pid = do
         Just (paperData, _) -> respondHtml $ PaperEdit paperId paperData
 
 {-@ updatePaper
-  :: {v: UserId | v == entityKey currentUser}
+  :: {v: UserId | v == entityKey (currentUser 0)}
   -> PaperId
-  -> TaggedT<{\v -> v == currentUser}, {\_ -> True}> _ _ _
+  -> TaggedT<{\v -> v == currentUser 0}, {\_ -> True}> _ _ _
 @-}
 updatePaper :: UserId -> PaperId -> Controller ()
 updatePaper viewerId paperId = do
@@ -143,8 +143,8 @@ paperNew = do
   if reqMethod req == methodPost then insertPaper viewerId else respondHtml PaperNew
 
 {-@ insertPaper ::
-     {u:_ | u == entityKey currentUser}
-  -> TaggedT<{\v -> v == currentUser}, {\_ -> True}> _ _ _
+     {u:_ | u == entityKey (currentUser 0)}
+  -> TaggedT<{\v -> v == currentUser 0}, {\_ -> True}> _ _ _
 @-}
 insertPaper :: UserId -> Controller ()
 insertPaper authorId = do
@@ -198,7 +198,7 @@ paperChair pid = do
 
 {-@
 assignReviewer
-  :: {u: Entity User | IsChair u && u == currentUser}
+  :: {u: Entity User | IsChair u && u == currentUser 0}
   -> PaperId
   -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ _
 @-}
@@ -237,7 +237,7 @@ getMyPaper userId paperId = do
       (title, abstract) <- project2 (paperTitle', paperAbstract') paper
       return . Just $ (PaperData paperId title abstract authors, reviews)
 
-{-@ getPaper :: _ -> TaggedT<{\v -> IsPc v}, {\v -> v == currentUser}> _ _ _ @-}
+{-@ getPaper :: _ -> TaggedT<{\v -> IsPc v}, {\v -> v == currentUser 0}> _ _ _ @-}
 getPaper :: PaperId -> Controller PaperData
 getPaper paperId = do
   paper             <- selectFirstOr404 (paperId' ==. paperId)

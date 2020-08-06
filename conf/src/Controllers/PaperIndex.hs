@@ -102,8 +102,8 @@ paperIndex = do
   papers   <- selectList trueF
   paperIds <- projectList paperId' papers
   isPC     <- pc viewer
-  papers   <- case (currentStage, isPC) of
-    ("public", _   ) -> getAcceptedPapers
-    (_       , True) -> getAllPapers
-    _                -> getMyPapers viewer
+  papers   <- case (currentStage == "public", isPC) of
+    (True, _   ) -> getAcceptedPapers
+    (_   , True) -> getAllPapers
+    _            -> getMyPapers viewer
   respondHtml (PaperIndex papers)
