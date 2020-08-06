@@ -36,7 +36,7 @@ instance HasTemplateCache Config where
 instance HasAuthMethod (Entity User) Controller Config where
   getAuthMethod = configAuthMethod
 
-{-@ respondHtml :: d -> TaggedT<{\_ -> True}, {\v -> v == currentUser}> _ _ _ @-}
+{-@ respondHtml :: d -> TaggedT<{\_ -> True}, {\v -> v == currentUser 0}> _ _ _ @-}
 respondHtml :: TemplateData d => d -> Controller b
 respondHtml d = do
   page <- renderTemplate d

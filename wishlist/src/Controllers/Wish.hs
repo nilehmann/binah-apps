@@ -61,7 +61,7 @@ wishNew = do
 
 {-@
 insertWish
-  :: {v: UserId | v == entityKey currentUser}
+  :: {v: UserId | v == entityKey (currentUser 0)}
   -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ _
 @-}
 insertWish :: UserId -> Controller ()
@@ -144,7 +144,7 @@ wishShow wid = do
 -- | Misc
 -----------------------------------------------------------------------------------
 
-{-@ getWishData :: _ -> TaggedT<{\v -> currentUser == v}, {\v -> True}> _ _ _ @-}
+{-@ getWishData :: _ -> TaggedT<{\v -> currentUser 0 == v}, {\v -> True}> _ _ _ @-}
 getWishData :: WishId -> Controller WishData
 getWishData wishId = do
   viewer   <- requireAuthUser
@@ -184,7 +184,7 @@ wishEditRoute wishId = printf "/wish/%d/edit" wid where wid = fromSqlKey wishId
 
 {-@
 friendRequest
-  :: {v: UserId | entityKey currentUser == v}
+  :: {v: UserId | entityKey (currentUser 0) == v}
   -> UserId
   -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ _
 @-}
@@ -196,7 +196,7 @@ friendRequest user1 user2 = do
 {-@
 acceptFriendship
   :: UserId
-  -> {v: UserId | entityKey currentUser == v}
+  -> {v: UserId | entityKey (currentUser 0) == v}
   -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ _
 @-}
 acceptFriendship :: UserId -> UserId -> Controller ()

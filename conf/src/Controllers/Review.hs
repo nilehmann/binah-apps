@@ -88,14 +88,14 @@ instance TemplateData ShowReview where
 
   toMustache (ShowReview review) = Mustache.object ["review" ~> review]
 
-{-@ updateReview :: ReviewId -> TaggedT<{\v -> v == currentUser}, {\_ -> True}> _ _ _ @-}
+{-@ updateReview :: ReviewId -> TaggedT<{\v -> currentUser v}, {\_ -> True}> _ _ _ @-}
 updateReview :: ReviewId -> Controller ()
 updateReview reviewId = do
   viewer   <- requireAuthUser
   viewerId <- project userId' viewer
   _        <- checkPcOr forbidden viewer
   _        <- checkStageOr forbidden "review"
-  review   <- selectFirstOr404 (reviewId' ==. reviewId)
+  review   <- selectFirstOr notFound (reviewId' ==. reviewId)
   paperId  <- project reviewPaper' review
   _ <- selectFirstOr forbidden
                      (reviewAssignmentPaper' ==. paperId &&: reviewAssignmentUser' ==. viewerId)
@@ -122,7 +122,7 @@ reviewShow reviewId = do
       return ()
     else return ()
 
-  review <- selectFirstOr404 (reviewId' ==. reviewId)
+  review <- selectFirstOr notFound (reviewId' ==. reviewId)
   isPC   <- pc viewer
   case (isPC, currentStage == "public") of
     (True, _) -> do
