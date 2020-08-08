@@ -58,7 +58,7 @@ runServer = runNoLoggingT $ do
         mode "dev" $ do
             host "localhost"
             port 3000
-            initWith $ initFromPool cache pool
+            initWithT $ initFromPool (Config cache httpAuthDb) pool
         dispatch $ do
             get "/"      homeAuthor
             get "/paper" paperNew
@@ -81,20 +81,21 @@ httpAuthDb = httpBasicAuth $ \username _password -> selectFirst (userName' ==. u
 initDB :: IO ()
 initDB = runSqlite "db.sqlite" $ do
     runMigration migrateAll
-    Persistent.insert $ persistentRecord
-        (mkUser "nadia" "Nadia Polikarpova" "npolikarpova@ucsd.edu" "ucsd" "chair")
-    Persistent.insert
-        $ persistentRecord (mkUser "ranjit" "Ranjit Jhala" "npolikarpova@ucsd.edu" "ucsd" "pc")
-    Persistent.insert
-        $ persistentRecord (mkUser "rose" "Rose Kunkel" "rkunkel@ucsd.edu" "ucsd" "author")
+    let (BinahRecord nadia) = (mkUser "nadia" "Nadia Polikarpova" "npolikarpova@ucsd.edu" "ucsd" "chair")
+    Persistent.insert nadia
+    let (BinahRecord ranjit) = (mkUser "ranjit" "Ranjit Jhala" "npolikarpova@ucsd.edu" "ucsd" "pc")
+    Persistent.insert ranjit
+    let (BinahRecord rose) = (mkUser "rose" "Rose Kunkel" "rkunkel@ucsd.edu" "ucsd" "author")
+    Persistent.insert rose
 
     return ()
 
 -- TODO find a way to provide this without exposing the instance of MonadBaseControl
 
-initFromPool :: MVar.MVar TemplateCache -> Pool SqlBackend -> Controller () -> ControllerT TIO ()
-initFromPool cache pool controller = Pool.withResource pool $ \sqlBackend ->
-    configure (Config sqlBackend cache httpAuthDb) . reading backend . unTag $ controller
+initFromPool :: Config -> Pool SqlBackend -> Controller () -> TaggedT (Entity User) (ControllerT TIO) ()
+initFromPool cfg pool = mapTaggedT run
+    where run act = Pool.withResource pool $ configure cfg . runReaderT act
+
 
 instance MonadBase IO TIO where
     liftBase = TIO

@@ -1,3 +1,5 @@
+import Data.Text (Text)
+
 predicate friends :: UserId -> UserId -> Bool
 
 User

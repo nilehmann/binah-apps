@@ -48,7 +48,7 @@ instance ToMustache RowData where
     ]
 
 
-{-@ joinWithAuthors :: _ -> TaggedT<{\_ -> True}, {\_ -> False}> _ _ @-}
+{-@ joinWithAuthors :: _ -> TaggedT<{\_ -> True}, {\_ -> False}> _ _ _ @-}
 joinWithAuthors :: [(UserId, (PaperId, Text))] -> Controller [RowData]
 joinWithAuthors papersByAuthor = do
   authors     <- selectList (userId' <-. map fst papersByAuthor)
@@ -61,7 +61,7 @@ joinWithAuthors papersByAuthor = do
     papersByAuthor
     authorsById
 
-{-@ getAllPapers :: TaggedT<{\u -> IsPc u}, {\_ -> False}> _ _ @-}
+{-@ getAllPapers :: TaggedT<{\u -> IsPc u}, {\_ -> False}> _ _ _ @-}
 getAllPapers :: Controller [RowData]
 getAllPapers = do
   papers    <- selectList trueF
@@ -70,7 +70,7 @@ getAllPapers = do
   joinWithAuthors $ zip authorIds paperData
 
 
-{-@ getAcceptedPapers :: TaggedT<{\_ -> currentStage == "public"}, {\_ -> False}> _ _ @-}
+{-@ getAcceptedPapers :: TaggedT<{\_ -> currentStage == "public"}, {\_ -> False}> _ _ _ @-}
 getAcceptedPapers :: Controller [RowData]
 getAcceptedPapers = do
   papers    <- selectList (paperAccepted' ==. True)
@@ -79,7 +79,10 @@ getAcceptedPapers = do
   joinWithAuthors $ zip authorIds paperData
 
 
-{-@ getMyPapers :: v: _ -> TaggedT<{\u -> (entityKey v) == (entityKey u)}, {\_ -> False}> _ _ @-}
+{-@
+getMyPapers ::
+  v: _ -> TaggedT<{\u -> (entityKey v) == (entityKey u)}, {\_ -> False}> _ _ _
+@-}
 getMyPapers :: Entity User -> Controller [RowData]
 getMyPapers viewer = do
   viewerId   <- project userId' viewer
@@ -91,7 +94,7 @@ getMyPapers viewer = do
   return $ map (uncurry $ RowData (Just viewerId) (Just viewerName)) paperData
 
 
-{-@ paperIndex :: TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
+{-@ paperIndex :: TaggedT<{\_ -> False}, {\_ -> True}> _ _ _ @-}
 paperIndex :: Controller ()
 paperIndex = do
   viewer   <- requireAuthUser
@@ -99,8 +102,8 @@ paperIndex = do
   papers   <- selectList trueF
   paperIds <- projectList paperId' papers
   isPC     <- pc viewer
-  papers   <- case (currentStage, isPC) of
-    ("public", _   ) -> getAcceptedPapers
-    (_       , True) -> getAllPapers
-    _                -> getMyPapers viewer
+  papers   <- case (currentStage == "public", isPC) of
+    (True, _   ) -> getAcceptedPapers
+    (_   , True) -> getAllPapers
+    _            -> getMyPapers viewer
   respondHtml (PaperIndex papers)

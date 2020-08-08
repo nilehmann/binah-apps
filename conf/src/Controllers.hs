@@ -24,24 +24,20 @@ import           Binah.Filters
 import           Model
 
 data Config = Config
-  { configBackend :: SqlBackend
-  , configTemplateCache :: !(MVar.MVar Mustache.TemplateCache)
+  { configTemplateCache :: !(MVar.MVar Mustache.TemplateCache)
   , configAuthMethod :: !(AuthMethod (Entity User) Controller)
   }
 
-type Controller = TaggedT (ReaderT SqlBackend (ConfigT Config (ControllerT TIO)))
+type Controller = TaggedT (Entity User) (ReaderT SqlBackend (ConfigT Config (ControllerT TIO)))
 
 instance HasTemplateCache Config where
   getTemplateCache = configTemplateCache
 
-instance HasSqlBackend Config where
-  getSqlBackend = configBackend
-
 instance HasAuthMethod (Entity User) Controller Config where
   getAuthMethod = configAuthMethod
 
-{-@ respondHtml :: _ -> TaggedT<{\_ -> True}, {\v -> v == currentUser}> _ _ @-}
-respondHtml :: TemplateData d => d -> Controller b
+{-@ respondHtml :: _ -> TaggedT<{\_ -> True}, {\v -> v == currentUser 0}> _ _ _ @-}
+respondHtml :: TemplateData d => d -> Controller ()
 respondHtml d = do
   page <- renderTemplate d
   respondTagged . okHtml . ByteString.fromStrict . encodeUtf8 $ page

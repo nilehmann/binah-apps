@@ -5,15 +5,14 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-@ LIQUID "--compile-spec" @-}
 
 module Model
-  ( EntityFieldWrapper(..)
-  , currentStage
-  , migrateAll
-  , BinahRecord
-  , persistentRecord
+  ( migrateAll
   , mkUser
   , mkPaper
   , mkReviewAssignment
@@ -52,7 +51,9 @@ module Model
   , ReviewAssignmentId
   , ReviewId
   , PaperCoauthorId
+  , currentStage
   )
+
 where
 
 import           Database.Persist               ( Key )
@@ -67,6 +68,8 @@ import qualified Database.Persist              as Persist
 
 import           Binah.Core
 
+
+
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 User
   username Text
@@ -75,16 +78,19 @@ User
   affiliation Text
   level String
 
+
 Paper
   author UserId
   title Text
   abstract Text
   accepted Bool
 
+
 ReviewAssignment
   paper PaperId
   user UserId
   assignType Text
+
 
 Review
   paper PaperId
@@ -92,24 +98,12 @@ Review
   content Text
   score Int
 
+
 PaperCoauthor
   paper PaperId
   author Text
+
 |]
-
-{-@
-data EntityFieldWrapper record typ < querypolicy :: Entity record -> Entity User -> Bool
-                                   , selector :: Entity record -> typ -> Bool
-                                   , flippedselector :: typ -> Entity record -> Bool
-                                   , capability :: Entity record -> Bool
-                                   , updatepolicy :: Entity record -> Entity record -> Entity User -> Bool
-                                   > = EntityFieldWrapper _
-@-}
-
-data EntityFieldWrapper record typ = EntityFieldWrapper (Persist.EntityField record typ)
-{-@ data variance EntityFieldWrapper covariant covariant invariant invariant invariant invariant invariant @-}
-
-{-@ measure currentUser :: Entity User @-}
 
 --------------------------------------------------------------------------------
 -- | Predicates
@@ -145,20 +139,6 @@ data EntityFieldWrapper record typ = EntityFieldWrapper (Persist.EntityField rec
 -- | Records
 --------------------------------------------------------------------------------
 
-{-@ data BinahRecord record <
-    p :: Entity record -> Bool
-  , insertpolicy :: Entity record -> Entity User -> Bool
-  , querypolicy  :: Entity record -> Entity User -> Bool
-  >
-  = BinahRecord _
-@-}
-data BinahRecord record = BinahRecord record
-{-@ data variance BinahRecord invariant invariant invariant invariant @-}
-
-{-@ persistentRecord :: BinahRecord record -> record @-}
-persistentRecord :: BinahRecord record -> record
-persistentRecord (BinahRecord record) = record
-
 {-@ measure getJust :: Key record -> Entity record @-}
 
 -- * User
@@ -172,8 +152,9 @@ persistentRecord (BinahRecord record) = record
        {\row -> userUsername (entityVal row) == x_0 && userName (entityVal row) == x_1 && userEmail (entityVal row) == x_2 && userAffiliation (entityVal row) == x_3 && userLevel (entityVal row) == x_4}
      , {\_ _ -> True}
      , {\x_0 x_1 -> (IsChair x_1 || entityKey x_1 == entityKey x_0)}
-     > User
+     > (Entity User) User
 @-}
+mkUser :: Text -> Text -> Text -> Text -> String -> BinahRecord (Entity User) User
 mkUser x_0 x_1 x_2 x_3 x_4 = BinahRecord (User x_0 x_1 x_2 x_3 x_4)
 
 {-@ invariant {v: Entity User | v == getJust (entityKey v)} @-}
@@ -186,9 +167,9 @@ mkUser x_0 x_1 x_2 x_3 x_4 = BinahRecord (User x_0 x_1 x_2 x_3 x_4)
   , {\field row  -> field == entityKey row}
   , {\_ -> False}
   , {\_ _ _ -> True}
-  > _ _
+  > (Entity User) User UserId
 @-}
-userId' :: EntityFieldWrapper User UserId
+userId' :: EntityFieldWrapper (Entity User) User UserId
 userId' = EntityFieldWrapper UserId
 
 {-@ measure userUsername :: User -> Text @-}
@@ -197,13 +178,13 @@ userId' = EntityFieldWrapper UserId
 
 {-@ assume userUsername' :: EntityFieldWrapper <
     {\_ _ -> True}
-  , {\row field  -> field == userUsername (entityVal row)}
-  , {\field row  -> field == userUsername (entityVal row)}
+  , {\row field -> field == userUsername (entityVal row)}
+  , {\field row -> field == userUsername (entityVal row)}
   , {\old -> userUsernameCap old}
   , {\old _ _ -> userUsernameCap old}
-  > _ _
+  > (Entity User) User Text
 @-}
-userUsername' :: EntityFieldWrapper User Text
+userUsername' :: EntityFieldWrapper (Entity User) User Text
 userUsername' = EntityFieldWrapper UserUsername
 
 {-@ measure userName :: User -> Text @-}
@@ -212,13 +193,13 @@ userUsername' = EntityFieldWrapper UserUsername
 
 {-@ assume userName' :: EntityFieldWrapper <
     {\_ _ -> True}
-  , {\row field  -> field == userName (entityVal row)}
-  , {\field row  -> field == userName (entityVal row)}
+  , {\row field -> field == userName (entityVal row)}
+  , {\field row -> field == userName (entityVal row)}
   , {\old -> userNameCap old}
   , {\old _ _ -> userNameCap old}
-  > _ _
+  > (Entity User) User Text
 @-}
-userName' :: EntityFieldWrapper User Text
+userName' :: EntityFieldWrapper (Entity User) User Text
 userName' = EntityFieldWrapper UserName
 
 {-@ measure userEmail :: User -> Text @-}
@@ -227,13 +208,13 @@ userName' = EntityFieldWrapper UserName
 
 {-@ assume userEmail' :: EntityFieldWrapper <
     {\x_0 x_1 -> (IsChair x_1 || entityKey x_1 == entityKey x_0)}
-  , {\row field  -> field == userEmail (entityVal row)}
-  , {\field row  -> field == userEmail (entityVal row)}
+  , {\row field -> field == userEmail (entityVal row)}
+  , {\field row -> field == userEmail (entityVal row)}
   , {\old -> userEmailCap old}
   , {\old _ _ -> userEmailCap old}
-  > _ _
+  > (Entity User) User Text
 @-}
-userEmail' :: EntityFieldWrapper User Text
+userEmail' :: EntityFieldWrapper (Entity User) User Text
 userEmail' = EntityFieldWrapper UserEmail
 
 {-@ measure userAffiliation :: User -> Text @-}
@@ -242,13 +223,13 @@ userEmail' = EntityFieldWrapper UserEmail
 
 {-@ assume userAffiliation' :: EntityFieldWrapper <
     {\_ _ -> True}
-  , {\row field  -> field == userAffiliation (entityVal row)}
-  , {\field row  -> field == userAffiliation (entityVal row)}
+  , {\row field -> field == userAffiliation (entityVal row)}
+  , {\field row -> field == userAffiliation (entityVal row)}
   , {\old -> userAffiliationCap old}
   , {\old _ _ -> userAffiliationCap old}
-  > _ _
+  > (Entity User) User Text
 @-}
-userAffiliation' :: EntityFieldWrapper User Text
+userAffiliation' :: EntityFieldWrapper (Entity User) User Text
 userAffiliation' = EntityFieldWrapper UserAffiliation
 
 {-@ measure userLevel :: User -> String @-}
@@ -257,13 +238,13 @@ userAffiliation' = EntityFieldWrapper UserAffiliation
 
 {-@ assume userLevel' :: EntityFieldWrapper <
     {\_ _ -> True}
-  , {\row field  -> field == userLevel (entityVal row)}
-  , {\field row  -> field == userLevel (entityVal row)}
+  , {\row field -> field == userLevel (entityVal row)}
+  , {\field row -> field == userLevel (entityVal row)}
   , {\old -> userLevelCap old}
   , {\old _ _ -> userLevelCap old}
-  > _ _
+  > (Entity User) User String
 @-}
-userLevel' :: EntityFieldWrapper User String
+userLevel' :: EntityFieldWrapper (Entity User) User String
 userLevel' = EntityFieldWrapper UserLevel
 
 -- * Paper
@@ -276,8 +257,9 @@ userLevel' = EntityFieldWrapper UserLevel
        {\row -> paperAuthor (entityVal row) == x_0 && paperTitle (entityVal row) == x_1 && paperAbstract (entityVal row) == x_2 && paperAccepted (entityVal row) == x_3}
      , {\paper viewer -> paperAuthor (entityVal paper) == entityKey viewer && paperAccepted (entityVal paper) == False && currentStage == "submit"}
      , {\x_0 x_1 -> (IsPc x_1 || isAuthor (entityKey x_1) (entityKey x_0) || (currentStage == "public" && paperAccepted (entityVal x_0))) || (IsPc x_1 || currentStage == "public")}
-     > Paper
+     > (Entity User) Paper
 @-}
+mkPaper :: UserId -> Text -> Text -> Bool -> BinahRecord (Entity User) Paper
 mkPaper x_0 x_1 x_2 x_3 = BinahRecord (Paper x_0 x_1 x_2 x_3)
 
 {-@ invariant {v: Entity Paper | v == getJust (entityKey v)} @-}
@@ -292,9 +274,9 @@ mkPaper x_0 x_1 x_2 x_3 = BinahRecord (Paper x_0 x_1 x_2 x_3)
   , {\field row  -> field == entityKey row}
   , {\_ -> False}
   , {\_ _ _ -> True}
-  > _ _
+  > (Entity User) Paper PaperId
 @-}
-paperId' :: EntityFieldWrapper Paper PaperId
+paperId' :: EntityFieldWrapper (Entity User) Paper PaperId
 paperId' = EntityFieldWrapper PaperId
 
 {-@ measure paperAuthor :: Paper -> UserId @-}
@@ -303,13 +285,13 @@ paperId' = EntityFieldWrapper PaperId
 
 {-@ assume paperAuthor' :: EntityFieldWrapper <
     {\x_0 x_1 -> (IsPc x_1 || isAuthor (entityKey x_1) (entityKey x_0) || (currentStage == "public" && paperAccepted (entityVal x_0)))}
-  , {\row field  -> field == paperAuthor (entityVal row)}
-  , {\field row  -> field == paperAuthor (entityVal row)}
+  , {\row field -> field == paperAuthor (entityVal row)}
+  , {\field row -> field == paperAuthor (entityVal row)}
   , {\old -> paperAuthorCap old}
   , {\x_0 x_1 x_2 -> ((False)) => (paperAuthorCap x_0)}
-  > _ _
+  > (Entity User) Paper UserId
 @-}
-paperAuthor' :: EntityFieldWrapper Paper UserId
+paperAuthor' :: EntityFieldWrapper (Entity User) Paper UserId
 paperAuthor' = EntityFieldWrapper PaperAuthor
 
 {-@ measure paperTitle :: Paper -> Text @-}
@@ -318,13 +300,13 @@ paperAuthor' = EntityFieldWrapper PaperAuthor
 
 {-@ assume paperTitle' :: EntityFieldWrapper <
     {\x_0 x_1 -> (IsPc x_1 || isAuthor (entityKey x_1) (entityKey x_0) || (currentStage == "public" && paperAccepted (entityVal x_0)))}
-  , {\row field  -> field == paperTitle (entityVal row)}
-  , {\field row  -> field == paperTitle (entityVal row)}
+  , {\row field -> field == paperTitle (entityVal row)}
+  , {\field row -> field == paperTitle (entityVal row)}
   , {\old -> paperTitleCap old}
   , {\x_0 x_1 x_2 -> ((entityKey x_2 == paperAuthor (entityVal x_0) && currentStage == "submit")) => (paperTitleCap x_0)}
-  > _ _
+  > (Entity User) Paper Text
 @-}
-paperTitle' :: EntityFieldWrapper Paper Text
+paperTitle' :: EntityFieldWrapper (Entity User) Paper Text
 paperTitle' = EntityFieldWrapper PaperTitle
 
 {-@ measure paperAbstract :: Paper -> Text @-}
@@ -333,13 +315,13 @@ paperTitle' = EntityFieldWrapper PaperTitle
 
 {-@ assume paperAbstract' :: EntityFieldWrapper <
     {\x_0 x_1 -> (IsPc x_1 || isAuthor (entityKey x_1) (entityKey x_0) || (currentStage == "public" && paperAccepted (entityVal x_0)))}
-  , {\row field  -> field == paperAbstract (entityVal row)}
-  , {\field row  -> field == paperAbstract (entityVal row)}
+  , {\row field -> field == paperAbstract (entityVal row)}
+  , {\field row -> field == paperAbstract (entityVal row)}
   , {\old -> paperAbstractCap old}
   , {\x_0 x_1 x_2 -> ((entityKey x_2 == paperAuthor (entityVal x_0) && currentStage == "submit")) => (paperAbstractCap x_0)}
-  > _ _
+  > (Entity User) Paper Text
 @-}
-paperAbstract' :: EntityFieldWrapper Paper Text
+paperAbstract' :: EntityFieldWrapper (Entity User) Paper Text
 paperAbstract' = EntityFieldWrapper PaperAbstract
 
 {-@ measure paperAccepted :: Paper -> Bool @-}
@@ -348,13 +330,13 @@ paperAbstract' = EntityFieldWrapper PaperAbstract
 
 {-@ assume paperAccepted' :: EntityFieldWrapper <
     {\x_0 x_1 -> (IsPc x_1 || currentStage == "public")}
-  , {\row field  -> field == paperAccepted (entityVal row)}
-  , {\field row  -> field == paperAccepted (entityVal row)}
+  , {\row field -> field == paperAccepted (entityVal row)}
+  , {\field row -> field == paperAccepted (entityVal row)}
   , {\old -> paperAcceptedCap old}
   , {\x_0 x_1 x_2 -> ((IsChair x_2 && currentStage == "review")) => (paperAcceptedCap x_0)}
-  > _ _
+  > (Entity User) Paper Bool
 @-}
-paperAccepted' :: EntityFieldWrapper Paper Bool
+paperAccepted' :: EntityFieldWrapper (Entity User) Paper Bool
 paperAccepted' = EntityFieldWrapper PaperAccepted
 
 -- * ReviewAssignment
@@ -366,8 +348,9 @@ paperAccepted' = EntityFieldWrapper PaperAccepted
        {\row -> reviewAssignmentPaper (entityVal row) == x_0 && reviewAssignmentUser (entityVal row) == x_1 && reviewAssignmentAssignType (entityVal row) == x_2}
      , {\row viewer -> IsChair viewer && IsPc (getJust (reviewAssignmentUser (entityVal row))) && currentStage == "review"}
      , {\x_0 x_1 -> (IsPc x_1)}
-     > ReviewAssignment
+     > (Entity User) ReviewAssignment
 @-}
+mkReviewAssignment :: PaperId -> UserId -> Text -> BinahRecord (Entity User) ReviewAssignment
 mkReviewAssignment x_0 x_1 x_2 = BinahRecord (ReviewAssignment x_0 x_1 x_2)
 
 {-@ invariant {v: Entity ReviewAssignment | v == getJust (entityKey v)} @-}
@@ -380,9 +363,9 @@ mkReviewAssignment x_0 x_1 x_2 = BinahRecord (ReviewAssignment x_0 x_1 x_2)
   , {\field row  -> field == entityKey row}
   , {\_ -> False}
   , {\_ _ _ -> True}
-  > _ _
+  > (Entity User) ReviewAssignment ReviewAssignmentId
 @-}
-reviewAssignmentId' :: EntityFieldWrapper ReviewAssignment ReviewAssignmentId
+reviewAssignmentId' :: EntityFieldWrapper (Entity User) ReviewAssignment ReviewAssignmentId
 reviewAssignmentId' = EntityFieldWrapper ReviewAssignmentId
 
 {-@ measure reviewAssignmentPaper :: ReviewAssignment -> PaperId @-}
@@ -391,13 +374,13 @@ reviewAssignmentId' = EntityFieldWrapper ReviewAssignmentId
 
 {-@ assume reviewAssignmentPaper' :: EntityFieldWrapper <
     {\x_0 x_1 -> (IsPc x_1)}
-  , {\row field  -> field == reviewAssignmentPaper (entityVal row)}
-  , {\field row  -> field == reviewAssignmentPaper (entityVal row)}
+  , {\row field -> field == reviewAssignmentPaper (entityVal row)}
+  , {\field row -> field == reviewAssignmentPaper (entityVal row)}
   , {\old -> reviewAssignmentPaperCap old}
   , {\x_0 x_1 x_2 -> ((False)) => (reviewAssignmentPaperCap x_0)}
-  > _ _
+  > (Entity User) ReviewAssignment PaperId
 @-}
-reviewAssignmentPaper' :: EntityFieldWrapper ReviewAssignment PaperId
+reviewAssignmentPaper' :: EntityFieldWrapper (Entity User) ReviewAssignment PaperId
 reviewAssignmentPaper' = EntityFieldWrapper ReviewAssignmentPaper
 
 {-@ measure reviewAssignmentUser :: ReviewAssignment -> UserId @-}
@@ -406,13 +389,13 @@ reviewAssignmentPaper' = EntityFieldWrapper ReviewAssignmentPaper
 
 {-@ assume reviewAssignmentUser' :: EntityFieldWrapper <
     {\x_0 x_1 -> (IsPc x_1)}
-  , {\row field  -> field == reviewAssignmentUser (entityVal row)}
-  , {\field row  -> field == reviewAssignmentUser (entityVal row)}
+  , {\row field -> field == reviewAssignmentUser (entityVal row)}
+  , {\field row -> field == reviewAssignmentUser (entityVal row)}
   , {\old -> reviewAssignmentUserCap old}
   , {\x_0 x_1 x_2 -> ((False)) => (reviewAssignmentUserCap x_0)}
-  > _ _
+  > (Entity User) ReviewAssignment UserId
 @-}
-reviewAssignmentUser' :: EntityFieldWrapper ReviewAssignment UserId
+reviewAssignmentUser' :: EntityFieldWrapper (Entity User) ReviewAssignment UserId
 reviewAssignmentUser' = EntityFieldWrapper ReviewAssignmentUser
 
 {-@ measure reviewAssignmentAssignType :: ReviewAssignment -> Text @-}
@@ -421,13 +404,13 @@ reviewAssignmentUser' = EntityFieldWrapper ReviewAssignmentUser
 
 {-@ assume reviewAssignmentAssignType' :: EntityFieldWrapper <
     {\x_0 x_1 -> (IsPc x_1)}
-  , {\row field  -> field == reviewAssignmentAssignType (entityVal row)}
-  , {\field row  -> field == reviewAssignmentAssignType (entityVal row)}
+  , {\row field -> field == reviewAssignmentAssignType (entityVal row)}
+  , {\field row -> field == reviewAssignmentAssignType (entityVal row)}
   , {\old -> reviewAssignmentAssignTypeCap old}
   , {\x_0 x_1 x_2 -> ((False)) => (reviewAssignmentAssignTypeCap x_0)}
-  > _ _
+  > (Entity User) ReviewAssignment Text
 @-}
-reviewAssignmentAssignType' :: EntityFieldWrapper ReviewAssignment Text
+reviewAssignmentAssignType' :: EntityFieldWrapper (Entity User) ReviewAssignment Text
 reviewAssignmentAssignType' = EntityFieldWrapper ReviewAssignmentAssignType
 
 -- * Review
@@ -440,8 +423,9 @@ reviewAssignmentAssignType' = EntityFieldWrapper ReviewAssignmentAssignType
        {\row -> reviewPaper (entityVal row) == x_0 && reviewReviewer (entityVal row) == x_1 && reviewContent (entityVal row) == x_2 && reviewScore (entityVal row) == x_3}
      , {\review viewer -> currentStage == "review" && reviewReviewer (entityVal review) == entityKey viewer && isReviewer (entityKey viewer) (reviewPaper (entityVal review))}
      , {\x_0 x_1 -> (IsPc x_1 || (currentStage == "public" && isAuthor (entityKey x_1) (reviewPaper (entityVal x_0)))) || (IsPc x_1)}
-     > Review
+     > (Entity User) Review
 @-}
+mkReview :: PaperId -> UserId -> Text -> Int -> BinahRecord (Entity User) Review
 mkReview x_0 x_1 x_2 x_3 = BinahRecord (Review x_0 x_1 x_2 x_3)
 
 {-@ invariant {v: Entity Review | v == getJust (entityKey v)} @-}
@@ -454,9 +438,9 @@ mkReview x_0 x_1 x_2 x_3 = BinahRecord (Review x_0 x_1 x_2 x_3)
   , {\field row  -> field == entityKey row}
   , {\_ -> False}
   , {\_ _ _ -> True}
-  > _ _
+  > (Entity User) Review ReviewId
 @-}
-reviewId' :: EntityFieldWrapper Review ReviewId
+reviewId' :: EntityFieldWrapper (Entity User) Review ReviewId
 reviewId' = EntityFieldWrapper ReviewId
 
 {-@ measure reviewPaper :: Review -> PaperId @-}
@@ -465,13 +449,13 @@ reviewId' = EntityFieldWrapper ReviewId
 
 {-@ assume reviewPaper' :: EntityFieldWrapper <
     {\x_0 x_1 -> (IsPc x_1 || (currentStage == "public" && isAuthor (entityKey x_1) (reviewPaper (entityVal x_0))))}
-  , {\row field  -> field == reviewPaper (entityVal row)}
-  , {\field row  -> field == reviewPaper (entityVal row)}
+  , {\row field -> field == reviewPaper (entityVal row)}
+  , {\field row -> field == reviewPaper (entityVal row)}
   , {\old -> reviewPaperCap old}
   , {\x_0 x_1 x_2 -> ((isReviewer (entityKey x_2) (reviewPaper (entityVal x_0)) && currentStage == "review")) => (reviewPaperCap x_0)}
-  > _ _
+  > (Entity User) Review PaperId
 @-}
-reviewPaper' :: EntityFieldWrapper Review PaperId
+reviewPaper' :: EntityFieldWrapper (Entity User) Review PaperId
 reviewPaper' = EntityFieldWrapper ReviewPaper
 
 {-@ measure reviewReviewer :: Review -> UserId @-}
@@ -480,13 +464,13 @@ reviewPaper' = EntityFieldWrapper ReviewPaper
 
 {-@ assume reviewReviewer' :: EntityFieldWrapper <
     {\x_0 x_1 -> (IsPc x_1)}
-  , {\row field  -> field == reviewReviewer (entityVal row)}
-  , {\field row  -> field == reviewReviewer (entityVal row)}
+  , {\row field -> field == reviewReviewer (entityVal row)}
+  , {\field row -> field == reviewReviewer (entityVal row)}
   , {\old -> reviewReviewerCap old}
   , {\x_0 x_1 x_2 -> ((False)) => (reviewReviewerCap x_0)}
-  > _ _
+  > (Entity User) Review UserId
 @-}
-reviewReviewer' :: EntityFieldWrapper Review UserId
+reviewReviewer' :: EntityFieldWrapper (Entity User) Review UserId
 reviewReviewer' = EntityFieldWrapper ReviewReviewer
 
 {-@ measure reviewContent :: Review -> Text @-}
@@ -495,13 +479,13 @@ reviewReviewer' = EntityFieldWrapper ReviewReviewer
 
 {-@ assume reviewContent' :: EntityFieldWrapper <
     {\x_0 x_1 -> (IsPc x_1 || (currentStage == "public" && isAuthor (entityKey x_1) (reviewPaper (entityVal x_0))))}
-  , {\row field  -> field == reviewContent (entityVal row)}
-  , {\field row  -> field == reviewContent (entityVal row)}
+  , {\row field -> field == reviewContent (entityVal row)}
+  , {\field row -> field == reviewContent (entityVal row)}
   , {\old -> reviewContentCap old}
   , {\x_0 x_1 x_2 -> ((isReviewer (entityKey x_2) (reviewPaper (entityVal x_0)) && currentStage == "review")) => (reviewContentCap x_0)}
-  > _ _
+  > (Entity User) Review Text
 @-}
-reviewContent' :: EntityFieldWrapper Review Text
+reviewContent' :: EntityFieldWrapper (Entity User) Review Text
 reviewContent' = EntityFieldWrapper ReviewContent
 
 {-@ measure reviewScore :: Review -> Int @-}
@@ -510,13 +494,13 @@ reviewContent' = EntityFieldWrapper ReviewContent
 
 {-@ assume reviewScore' :: EntityFieldWrapper <
     {\x_0 x_1 -> (IsPc x_1 || (currentStage == "public" && isAuthor (entityKey x_1) (reviewPaper (entityVal x_0))))}
-  , {\row field  -> field == reviewScore (entityVal row)}
-  , {\field row  -> field == reviewScore (entityVal row)}
+  , {\row field -> field == reviewScore (entityVal row)}
+  , {\field row -> field == reviewScore (entityVal row)}
   , {\old -> reviewScoreCap old}
   , {\x_0 x_1 x_2 -> ((isReviewer (entityKey x_2) (reviewPaper (entityVal x_0)) && currentStage == "review")) => (reviewScoreCap x_0)}
-  > _ _
+  > (Entity User) Review Int
 @-}
-reviewScore' :: EntityFieldWrapper Review Int
+reviewScore' :: EntityFieldWrapper (Entity User) Review Int
 reviewScore' = EntityFieldWrapper ReviewScore
 
 -- * PaperCoauthor
@@ -527,8 +511,9 @@ reviewScore' = EntityFieldWrapper ReviewScore
        {\row -> paperCoauthorPaper (entityVal row) == x_0 && paperCoauthorAuthor (entityVal row) == x_1}
      , {\_ _ -> True}
      , {\x_0 x_1 -> (IsPc x_1 || isAuthor (entityKey x_1) (paperCoauthorPaper (entityVal x_0)) || (currentStage == "public" && isAccepted (paperCoauthorPaper (entityVal x_0))))}
-     > PaperCoauthor
+     > (Entity User) PaperCoauthor
 @-}
+mkPaperCoauthor :: PaperId -> Text -> BinahRecord (Entity User) PaperCoauthor
 mkPaperCoauthor x_0 x_1 = BinahRecord (PaperCoauthor x_0 x_1)
 
 {-@ invariant {v: Entity PaperCoauthor | v == getJust (entityKey v)} @-}
@@ -541,9 +526,9 @@ mkPaperCoauthor x_0 x_1 = BinahRecord (PaperCoauthor x_0 x_1)
   , {\field row  -> field == entityKey row}
   , {\_ -> False}
   , {\_ _ _ -> True}
-  > _ _
+  > (Entity User) PaperCoauthor PaperCoauthorId
 @-}
-paperCoauthorId' :: EntityFieldWrapper PaperCoauthor PaperCoauthorId
+paperCoauthorId' :: EntityFieldWrapper (Entity User) PaperCoauthor PaperCoauthorId
 paperCoauthorId' = EntityFieldWrapper PaperCoauthorId
 
 {-@ measure paperCoauthorPaper :: PaperCoauthor -> PaperId @-}
@@ -552,13 +537,13 @@ paperCoauthorId' = EntityFieldWrapper PaperCoauthorId
 
 {-@ assume paperCoauthorPaper' :: EntityFieldWrapper <
     {\x_0 x_1 -> (IsPc x_1 || isAuthor (entityKey x_1) (paperCoauthorPaper (entityVal x_0)) || (currentStage == "public" && isAccepted (paperCoauthorPaper (entityVal x_0))))}
-  , {\row field  -> field == paperCoauthorPaper (entityVal row)}
-  , {\field row  -> field == paperCoauthorPaper (entityVal row)}
+  , {\row field -> field == paperCoauthorPaper (entityVal row)}
+  , {\field row -> field == paperCoauthorPaper (entityVal row)}
   , {\old -> paperCoauthorPaperCap old}
   , {\old _ _ -> paperCoauthorPaperCap old}
-  > _ _
+  > (Entity User) PaperCoauthor PaperId
 @-}
-paperCoauthorPaper' :: EntityFieldWrapper PaperCoauthor PaperId
+paperCoauthorPaper' :: EntityFieldWrapper (Entity User) PaperCoauthor PaperId
 paperCoauthorPaper' = EntityFieldWrapper PaperCoauthorPaper
 
 {-@ measure paperCoauthorAuthor :: PaperCoauthor -> Text @-}
@@ -567,13 +552,13 @@ paperCoauthorPaper' = EntityFieldWrapper PaperCoauthorPaper
 
 {-@ assume paperCoauthorAuthor' :: EntityFieldWrapper <
     {\x_0 x_1 -> (IsPc x_1 || isAuthor (entityKey x_1) (paperCoauthorPaper (entityVal x_0)) || (currentStage == "public" && isAccepted (paperCoauthorPaper (entityVal x_0))))}
-  , {\row field  -> field == paperCoauthorAuthor (entityVal row)}
-  , {\field row  -> field == paperCoauthorAuthor (entityVal row)}
+  , {\row field -> field == paperCoauthorAuthor (entityVal row)}
+  , {\field row -> field == paperCoauthorAuthor (entityVal row)}
   , {\old -> paperCoauthorAuthorCap old}
   , {\old _ _ -> paperCoauthorAuthorCap old}
-  > _ _
+  > (Entity User) PaperCoauthor Text
 @-}
-paperCoauthorAuthor' :: EntityFieldWrapper PaperCoauthor Text
+paperCoauthorAuthor' :: EntityFieldWrapper (Entity User) PaperCoauthor Text
 paperCoauthorAuthor' = EntityFieldWrapper PaperCoauthorAuthor
 
 --------------------------------------------------------------------------------

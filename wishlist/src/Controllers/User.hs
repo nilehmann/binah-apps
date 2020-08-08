@@ -40,20 +40,18 @@ instance ToMustache WishData where
     toMustache (WishData id description) =
         Mustache.object ["id" ~> show (fromSqlKey id), "description" ~> description]
 
-{-@ userShow :: Int64 -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
+{-@ userShow :: Int64 -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ _ @-}
 userShow :: Int64 -> Controller ()
 userShow uid = do
     let userId = toSqlKey uid
     viewer   <- requireAuthUser
     viewerId <- project userId' viewer
     friends  <- selectFirst
-        (   friendshipUser1'
-        ==. userId
-        &&: friendshipUser2'
-        ==. viewerId
-        &&: friendshipStatus'
-        ==. "accepted"
-        )
+
+       ((friendshipUser1' ==. userId)
+        &&: (friendshipUser2' ==. viewerId)
+        &&: (friendshipStatus' ==. "accepted")
+       )
     wishesData <- case (viewerId == userId, friends) of
         (True, _) -> do
             wishes <- selectList (wishOwner' ==. userId)

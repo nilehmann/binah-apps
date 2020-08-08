@@ -52,7 +52,7 @@ instance TemplateData PaperShow where
     Mustache.object ["paper" ~> paperData, "reviews" ~> reviews]
 
 
-{-@ paperShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
+{-@ paperShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ _ @-}
 paperShow :: Int64 -> Controller ()
 paperShow pid = do
   let paperId = toSqlKey pid
@@ -94,7 +94,7 @@ instance TemplateData PaperEdit where
     Mustache.object ["action" ~> paperEditRoute id, "paper" ~> paper]
 
 
-{-@ paperEdit :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
+{-@ paperEdit :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ _ @-}
 paperEdit :: Int64 -> Controller ()
 paperEdit pid = do
   let paperId = toSqlKey pid
@@ -112,9 +112,9 @@ paperEdit pid = do
         Just (paperData, _) -> respondHtml $ PaperEdit paperId paperData
 
 {-@ updatePaper
-  :: {v: UserId | v == entityKey currentUser}
+  :: {v: UserId | v == entityKey (currentUser 0)}
   -> PaperId
-  -> TaggedT<{\v -> v == currentUser}, {\_ -> True}> _ _
+  -> TaggedT<{\v -> v == currentUser 0}, {\_ -> True}> _ _ _
 @-}
 updatePaper :: UserId -> PaperId -> Controller ()
 updatePaper viewerId paperId = do
@@ -132,7 +132,7 @@ updatePaper viewerId paperId = do
 -- | New Paper
 ------------------------------------------------------------------------------------------------
 
-{-@ paperNew :: TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
+{-@ paperNew :: TaggedT<{\_ -> False}, {\_ -> True}> _ _ _ @-}
 paperNew :: Controller ()
 paperNew = do
   when (currentStage /= "submit") (respondTagged forbidden)
@@ -143,8 +143,8 @@ paperNew = do
   if reqMethod req == methodPost then insertPaper viewerId else respondHtml PaperNew
 
 {-@ insertPaper ::
-     {u:_ | u == entityKey currentUser}
-  -> TaggedT<{\v -> v == currentUser}, {\_ -> True}> _ _
+     {u:_ | u == entityKey (currentUser 0)}
+  -> TaggedT<{\v -> v == currentUser 0}, {\_ -> True}> _ _ _
 @-}
 insertPaper :: UserId -> Controller ()
 insertPaper authorId = do
@@ -179,7 +179,7 @@ data UserData = UserData {userDataId :: UserId, userDataName :: Text}
 instance ToMustache UserData where
   toMustache (UserData id name) = Mustache.object ["id" ~> id, "name" ~> name]
 
-{-@ paperChair :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
+{-@ paperChair :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ _ @-}
 paperChair :: Int64 -> Controller ()
 paperChair pid = do
   let paperId = toSqlKey pid
@@ -198,9 +198,9 @@ paperChair pid = do
 
 {-@
 assignReviewer
-  :: {u: Entity User | IsChair u && u == currentUser}
+  :: {u: Entity User | IsChair u && u == currentUser 0}
   -> PaperId
-  -> TaggedT<{\_ -> True}, {\_ -> True}> _ _
+  -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ _
 @-}
 assignReviewer :: Entity User -> PaperId -> Controller ()
 assignReviewer _ paperId = do
@@ -213,7 +213,7 @@ assignReviewer _ paperId = do
       return ()
     _ -> respondTagged badRequest
 
-{-@ getReviewers :: _ -> TaggedT<{\v -> IsChair v}, {\_ -> False}> _ _ @-}
+{-@ getReviewers :: _ -> TaggedT<{\v -> IsChair v}, {\_ -> False}> _ _ _ @-}
 getReviewers :: PaperId -> Controller [Text]
 getReviewers paperId = do
   assignments <- selectList (reviewAssignmentPaper' ==. paperId)
@@ -225,7 +225,7 @@ getReviewers paperId = do
 -- | Helpers
 ------------------------------------------------------------------------------------------------
 
-{-@ getMyPaper :: u:_ -> _ -> TaggedT<{\v -> entityKey v == u}, {\_ -> False}> _ _ @-}
+{-@ getMyPaper :: u:_ -> _ -> TaggedT<{\v -> entityKey v == u}, {\_ -> False}> _ _ _ @-}
 getMyPaper :: UserId -> PaperId -> Controller (Maybe (PaperData, [AnonymousReview]))
 getMyPaper userId paperId = do
   maybePaper <- selectFirst (paperId' ==. paperId &&: paperAuthor' ==. userId)
@@ -237,7 +237,7 @@ getMyPaper userId paperId = do
       (title, abstract) <- project2 (paperTitle', paperAbstract') paper
       return . Just $ (PaperData paperId title abstract authors, reviews)
 
-{-@ getPaper :: _ -> TaggedT<{\v -> IsPc v}, {\v -> v == currentUser}> _ _ @-}
+{-@ getPaper :: _ -> TaggedT<{\v -> IsPc v}, {\v -> v == currentUser 0}> _ _ _ @-}
 getPaper :: PaperId -> Controller PaperData
 getPaper paperId = do
   paper             <- selectFirstOr404 (paperId' ==. paperId)
@@ -250,7 +250,7 @@ getPaper paperId = do
   p: _ ->
   TaggedT<{\v -> IsPc v ||
                  (currentStage == "public" && isAuthor (entityKey v) (entityKey p))},
-          {\_ -> False}> _ _ @-}
+          {\_ -> False}> _ _ _ @-}
 getReviews :: Entity Paper -> Controller [AnonymousReview]
 getReviews paper = do
   paperId     <- project paperId' paper
@@ -259,7 +259,7 @@ getReviews paper = do
   return $ map (uncurry AnonymousReview) reviewsData
 
 
-{-@ getAuthors :: p: _ -> TaggedT<{\u -> PcOrAuthorOrAccepted p u}, {\_ -> False}> _ _ @-}
+{-@ getAuthors :: p: _ -> TaggedT<{\u -> PcOrAuthorOrAccepted p u}, {\_ -> False}> _ _ _ @-}
 getAuthors :: Entity Paper -> Controller [Text]
 getAuthors paper = do
   (paperId, authorId) <- project2 (paperId', paperAuthor') paper

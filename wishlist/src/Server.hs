@@ -22,6 +22,7 @@ import           Binah.Core
 import           Binah.Infrastructure
 import           Binah.Filters
 import           Binah.Insert
+import           Binah.Updates
 import           Binah.Actions
 
 import           Controllers
@@ -46,7 +47,7 @@ initDB = runSqlite "db.sqlite" (runMigration migrateAll)
 httpAuthDb :: AuthMethod (Entity User) Controller
 httpAuthDb = httpBasicAuth $ \username _password -> selectFirst (userName' ==. username)
 
-
+{-@ ignore runServer @-}
 runServer :: IO ()
 runServer = runSqlite "db.sqlite" $ do
     backend <- ask
