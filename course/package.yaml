@@ -36,6 +36,14 @@ dependencies:
 - wai
 - wai-extra
 - warp
+- scrypt
+- exceptions
+- aeson
+- MonadRandom
+- smtp-mail
+- mime-mail
+- network
+- monad-time
 
 library:
   source-dirs: src

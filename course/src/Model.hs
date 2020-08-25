@@ -5,8 +5,58 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE UndecidableInstances #-}
 
-module Model where
+{-@ LIQUID "--compile-spec" @-}
+
+module Model
+  ( migrateAll
+  , mkUser
+  , mkCourse
+  , mkCourseInstructor
+  , mkEnrollment
+  , mkAssignment
+  , mkSubmission
+  , User
+  , Course
+  , CourseInstructor
+  , Enrollment
+  , Assignment
+  , Submission
+  , userId'
+  , userUsername'
+  , userEmail'
+  , userName'
+  , userRole'
+  , courseId'
+  , courseName'
+  , courseInstructorId'
+  , courseInstructorCourse'
+  , courseInstructorInstructor'
+  , enrollmentId'
+  , enrollmentStudent'
+  , enrollmentCourse'
+  , enrollmentGrade'
+  , assignmentId'
+  , assignmentName'
+  , assignmentCourse'
+  , assignmentDescription'
+  , submissionId'
+  , submissionAssignment'
+  , submissionAuthor'
+  , submissionContent'
+  , submissionGrade'
+  , UserId
+  , CourseId
+  , CourseInstructorId
+  , EnrollmentId
+  , AssignmentId
+  , SubmissionId
+  )
+where
+
 
 import           Database.Persist               ( Key )
 import           Database.Persist.TH            ( share
@@ -15,10 +65,21 @@ import           Database.Persist.TH            ( share
                                                 , sqlSettings
                                                 , persistLowerCase
                                                 )
-import           Data.Text                      ( Text )
 import qualified Database.Persist              as Persist
 
 import           Binah.Core
+
+import Data.Text ( Text )
+
+--------------------------------------------------------------------------------
+-- | Inline
+--------------------------------------------------------------------------------
+
+
+
+--------------------------------------------------------------------------------
+-- | Persistent
+--------------------------------------------------------------------------------
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 User
@@ -26,40 +87,36 @@ User
   email Text
   name Text
   role String
+  
 
 Course
   name Text
+  
 
 CourseInstructor
   course CourseId
   instructor UserId
+  
 
 Enrollment
   student UserId
   course CourseId
   grade String
+  
 
 Assignment
   name Text
   course CourseId
   description Text
+  
 
 Submission
   assignment AssignmentId
   author UserId
   content Text
   grade String
+  
 |]
-
-{-@
-data EntityFieldWrapper record typ < policy :: Entity record -> Entity User -> Bool
-                                   , selector :: Entity record -> typ -> Bool
-                                   , flippedselector :: typ -> Entity record -> Bool
-                                   > = EntityFieldWrapper _
-@-}
-
-data EntityFieldWrapper record typ = EntityFieldWrapper (Persist.EntityField record typ)
-{-@ data variance EntityFieldWrapper covariant covariant invariant invariant invariant @-}
 
 --------------------------------------------------------------------------------
 -- | Predicates
@@ -88,14 +145,19 @@ data EntityFieldWrapper record typ = EntityFieldWrapper (Persist.EntityField rec
 {-@ measure getJust :: Key record -> Entity record @-}
 
 -- * User
-
-{-@ data User = User
-  { userUsername :: _
-  , userEmail :: _
-  , userName :: _
-  , userRole :: _
-  }
+{-@ mkUser ::
+     x_0: Text
+  -> x_1: Text
+  -> x_2: Text
+  -> x_3: String
+  -> BinahRecord <
+       {\row -> userUsername (entityVal row) == x_0 && userEmail (entityVal row) == x_1 && userName (entityVal row) == x_2 && userRole (entityVal row) == x_3}
+     , {\_ _ -> True}
+     , {\x_0 x_1 -> (entityKey x_0 == entityKey x_1)}
+     > (Entity User) User
 @-}
+mkUser :: Text -> Text -> Text -> String -> BinahRecord (Entity User) User
+mkUser x_0 x_1 x_2 x_3 = BinahRecord (User x_0 x_1 x_2 x_3)
 
 {-@ invariant {v: Entity User | v == getJust (entityKey v)} @-}
 
@@ -105,53 +167,84 @@ data EntityFieldWrapper record typ = EntityFieldWrapper (Persist.EntityField rec
     {\row viewer -> True}
   , {\row field  -> field == entityKey row}
   , {\field row  -> field == entityKey row}
-  > _ _
+  , {\_ -> False}
+  , {\_ _ _ -> True}
+  > (Entity User) User UserId
 @-}
-userId' :: EntityFieldWrapper User UserId
+userId' :: EntityFieldWrapper (Entity User) User UserId
 userId' = EntityFieldWrapper UserId
 
+{-@ measure userUsername :: User -> Text @-}
+
+{-@ measure userUsernameCap :: Entity User -> Bool @-}
+
 {-@ assume userUsername' :: EntityFieldWrapper <
-    {\row viewer -> True}
-  , {\row field  -> field == userUsername (entityVal row)}
-  , {\field row  -> field == userUsername (entityVal row)}
-  > _ _
+    {\_ _ -> True}
+  , {\row field -> field == userUsername (entityVal row)}
+  , {\field row -> field == userUsername (entityVal row)}
+  , {\old -> userUsernameCap old}
+  , {\old _ _ -> userUsernameCap old}
+  > (Entity User) User Text
 @-}
-userUsername' :: EntityFieldWrapper User Text
+userUsername' :: EntityFieldWrapper (Entity User) User Text
 userUsername' = EntityFieldWrapper UserUsername
 
+{-@ measure userEmail :: User -> Text @-}
+
+{-@ measure userEmailCap :: Entity User -> Bool @-}
+
 {-@ assume userEmail' :: EntityFieldWrapper <
-    {\row viewer -> IsSelf row viewer}
-  , {\row field  -> field == userEmail (entityVal row)}
-  , {\field row  -> field == userEmail (entityVal row)}
-  > _ _
+    {\x_0 x_1 -> (entityKey x_0 == entityKey x_1)}
+  , {\row field -> field == userEmail (entityVal row)}
+  , {\field row -> field == userEmail (entityVal row)}
+  , {\old -> userEmailCap old}
+  , {\old _ _ -> userEmailCap old}
+  > (Entity User) User Text
 @-}
-userEmail' :: EntityFieldWrapper User Text
+userEmail' :: EntityFieldWrapper (Entity User) User Text
 userEmail' = EntityFieldWrapper UserEmail
 
+{-@ measure userName :: User -> Text @-}
+
+{-@ measure userNameCap :: Entity User -> Bool @-}
+
 {-@ assume userName' :: EntityFieldWrapper <
-    {\row viewer -> True}
-  , {\row field  -> field == userName (entityVal row)}
-  , {\field row  -> field == userName (entityVal row)}
-  > _ _
+    {\_ _ -> True}
+  , {\row field -> field == userName (entityVal row)}
+  , {\field row -> field == userName (entityVal row)}
+  , {\old -> userNameCap old}
+  , {\old _ _ -> userNameCap old}
+  > (Entity User) User Text
 @-}
-userName' :: EntityFieldWrapper User Text
+userName' :: EntityFieldWrapper (Entity User) User Text
 userName' = EntityFieldWrapper UserName
 
+{-@ measure userRole :: User -> String @-}
+
+{-@ measure userRoleCap :: Entity User -> Bool @-}
+
 {-@ assume userRole' :: EntityFieldWrapper <
-    {\row viewer -> True}
-  , {\row field  -> field == userRole (entityVal row)}
-  , {\field row  -> field == userRole (entityVal row)}
-  > _ _
+    {\_ _ -> True}
+  , {\row field -> field == userRole (entityVal row)}
+  , {\field row -> field == userRole (entityVal row)}
+  , {\old -> userRoleCap old}
+  , {\old _ _ -> userRoleCap old}
+  > (Entity User) User String
 @-}
-userRole' :: EntityFieldWrapper User String
+userRole' :: EntityFieldWrapper (Entity User) User String
 userRole' = EntityFieldWrapper UserRole
 
 -- * Course
-
-{-@ data Course = Course
-  { courseName :: _
-  }
+{-@ mkCourse ::
+     x_0: Text
+  -> BinahRecord <
+       {\row -> courseName (entityVal row) == x_0}
+     , {\_ _ -> True}
+     , {\x_0 x_1 -> False}
+     > (Entity User) Course
 @-}
+mkCourse :: Text -> BinahRecord (Entity User) Course
+mkCourse x_0 = BinahRecord (Course x_0)
 
 {-@ invariant {v: Entity Course | v == getJust (entityKey v)} @-}
 
@@ -161,27 +254,40 @@ userRole' = EntityFieldWrapper UserRole
     {\row viewer -> True}
   , {\row field  -> field == entityKey row}
   , {\field row  -> field == entityKey row}
-  > _ _
+  , {\_ -> False}
+  , {\_ _ _ -> True}
+  > (Entity User) Course CourseId
 @-}
-courseId' :: EntityFieldWrapper Course CourseId
+courseId' :: EntityFieldWrapper (Entity User) Course CourseId
 courseId' = EntityFieldWrapper CourseId
 
+{-@ measure courseName :: Course -> Text @-}
+
+{-@ measure courseNameCap :: Entity Course -> Bool @-}
+
 {-@ assume courseName' :: EntityFieldWrapper <
-    {\row viewer -> True}
-  , {\row field  -> field == courseName (entityVal row)}
-  , {\field row  -> field == courseName (entityVal row)}
-  > _ _
+    {\_ _ -> True}
+  , {\row field -> field == courseName (entityVal row)}
+  , {\field row -> field == courseName (entityVal row)}
+  , {\old -> courseNameCap old}
+  , {\old _ _ -> courseNameCap old}
+  > (Entity User) Course Text
 @-}
-courseName' :: EntityFieldWrapper Course Text
+courseName' :: EntityFieldWrapper (Entity User) Course Text
 courseName' = EntityFieldWrapper CourseName
 
 -- * CourseInstructor
-
-{-@ data CourseInstructor = CourseInstructor
-  { courseInstructorCourse :: _
-  , courseInstructorInstructor :: _
-  }
+{-@ mkCourseInstructor ::
+     x_0: CourseId
+  -> x_1: UserId
+  -> BinahRecord <
+       {\row -> courseInstructorCourse (entityVal row) == x_0 && courseInstructorInstructor (entityVal row) == x_1}
+     , {\_ _ -> True}
+     , {\x_0 x_1 -> False}
+     > (Entity User) CourseInstructor
 @-}
+mkCourseInstructor :: CourseId -> UserId -> BinahRecord (Entity User) CourseInstructor
+mkCourseInstructor x_0 x_1 = BinahRecord (CourseInstructor x_0 x_1)
 
 {-@ invariant {v: Entity CourseInstructor | v == getJust (entityKey v)} @-}
 
@@ -191,37 +297,56 @@ courseName' = EntityFieldWrapper CourseName
     {\row viewer -> True}
   , {\row field  -> field == entityKey row}
   , {\field row  -> field == entityKey row}
-  > _ _
+  , {\_ -> False}
+  , {\_ _ _ -> True}
+  > (Entity User) CourseInstructor CourseInstructorId
 @-}
-courseInstructorId' :: EntityFieldWrapper CourseInstructor CourseInstructorId
+courseInstructorId' :: EntityFieldWrapper (Entity User) CourseInstructor CourseInstructorId
 courseInstructorId' = EntityFieldWrapper CourseInstructorId
 
+{-@ measure courseInstructorCourse :: CourseInstructor -> CourseId @-}
+
+{-@ measure courseInstructorCourseCap :: Entity CourseInstructor -> Bool @-}
+
 {-@ assume courseInstructorCourse' :: EntityFieldWrapper <
-    {\row viewer -> True}
-  , {\row field  -> field == courseInstructorCourse (entityVal row)}
-  , {\field row  -> field == courseInstructorCourse (entityVal row)}
-  > _ _
+    {\_ _ -> True}
+  , {\row field -> field == courseInstructorCourse (entityVal row)}
+  , {\field row -> field == courseInstructorCourse (entityVal row)}
+  , {\old -> courseInstructorCourseCap old}
+  , {\old _ _ -> courseInstructorCourseCap old}
+  > (Entity User) CourseInstructor CourseId
 @-}
-courseInstructorCourse' :: EntityFieldWrapper CourseInstructor CourseId
+courseInstructorCourse' :: EntityFieldWrapper (Entity User) CourseInstructor CourseId
 courseInstructorCourse' = EntityFieldWrapper CourseInstructorCourse
 
+{-@ measure courseInstructorInstructor :: CourseInstructor -> UserId @-}
+
+{-@ measure courseInstructorInstructorCap :: Entity CourseInstructor -> Bool @-}
+
 {-@ assume courseInstructorInstructor' :: EntityFieldWrapper <
-    {\row viewer -> True}
-  , {\row field  -> field == courseInstructorInstructor (entityVal row)}
-  , {\field row  -> field == courseInstructorInstructor (entityVal row)}
-  > _ _
+    {\_ _ -> True}
+  , {\row field -> field == courseInstructorInstructor (entityVal row)}
+  , {\field row -> field == courseInstructorInstructor (entityVal row)}
+  , {\old -> courseInstructorInstructorCap old}
+  , {\old _ _ -> courseInstructorInstructorCap old}
+  > (Entity User) CourseInstructor UserId
 @-}
-courseInstructorInstructor' :: EntityFieldWrapper CourseInstructor UserId
+courseInstructorInstructor' :: EntityFieldWrapper (Entity User) CourseInstructor UserId
 courseInstructorInstructor' = EntityFieldWrapper CourseInstructorInstructor
 
 -- * Enrollment
-
-{-@ data Enrollment = Enrollment
-  { enrollmentStudent :: _
-  , enrollmentCourse :: _
-  , enrollmentGrade :: _
-  }
+{-@ mkEnrollment ::
+     x_0: UserId
+  -> x_1: CourseId
+  -> x_2: String
+  -> BinahRecord <
+       {\row -> enrollmentStudent (entityVal row) == x_0 && enrollmentCourse (entityVal row) == x_1 && enrollmentGrade (entityVal row) == x_2}
+     , {\_ _ -> True}
+     , {\x_0 x_1 -> (entityKey x_1 == enrollmentStudent (entityVal x_0) || isInstructor (entityKey x_1) (enrollmentCourse (entityVal x_0)))}
+     > (Entity User) Enrollment
 @-}
+mkEnrollment :: UserId -> CourseId -> String -> BinahRecord (Entity User) Enrollment
+mkEnrollment x_0 x_1 x_2 = BinahRecord (Enrollment x_0 x_1 x_2)
 
 {-@ invariant {v: Entity Enrollment | v == getJust (entityKey v)} @-}
 
@@ -231,46 +356,71 @@ courseInstructorInstructor' = EntityFieldWrapper CourseInstructorInstructor
     {\row viewer -> True}
   , {\row field  -> field == entityKey row}
   , {\field row  -> field == entityKey row}
-  > _ _
+  , {\_ -> False}
+  , {\_ _ _ -> True}
+  > (Entity User) Enrollment EnrollmentId
 @-}
-enrollmentId' :: EntityFieldWrapper Enrollment EnrollmentId
+enrollmentId' :: EntityFieldWrapper (Entity User) Enrollment EnrollmentId
 enrollmentId' = EntityFieldWrapper EnrollmentId
 
+{-@ measure enrollmentStudent :: Enrollment -> UserId @-}
+
+{-@ measure enrollmentStudentCap :: Entity Enrollment -> Bool @-}
+
 {-@ assume enrollmentStudent' :: EntityFieldWrapper <
-    {\row viewer -> True}
-  , {\row field  -> field == enrollmentStudent (entityVal row)}
-  , {\field row  -> field == enrollmentStudent (entityVal row)}
-  > _ _
+    {\_ _ -> True}
+  , {\row field -> field == enrollmentStudent (entityVal row)}
+  , {\field row -> field == enrollmentStudent (entityVal row)}
+  , {\old -> enrollmentStudentCap old}
+  , {\old _ _ -> enrollmentStudentCap old}
+  > (Entity User) Enrollment UserId
 @-}
-enrollmentStudent' :: EntityFieldWrapper Enrollment UserId
+enrollmentStudent' :: EntityFieldWrapper (Entity User) Enrollment UserId
 enrollmentStudent' = EntityFieldWrapper EnrollmentStudent
 
+{-@ measure enrollmentCourse :: Enrollment -> CourseId @-}
+
+{-@ measure enrollmentCourseCap :: Entity Enrollment -> Bool @-}
+
 {-@ assume enrollmentCourse' :: EntityFieldWrapper <
-    {\row viewer -> True}
-  , {\row field  -> field == enrollmentCourse (entityVal row)}
-  , {\field row  -> field == enrollmentCourse (entityVal row)}
-  > _ _
+    {\_ _ -> True}
+  , {\row field -> field == enrollmentCourse (entityVal row)}
+  , {\field row -> field == enrollmentCourse (entityVal row)}
+  , {\old -> enrollmentCourseCap old}
+  , {\old _ _ -> enrollmentCourseCap old}
+  > (Entity User) Enrollment CourseId
 @-}
-enrollmentCourse' :: EntityFieldWrapper Enrollment CourseId
+enrollmentCourse' :: EntityFieldWrapper (Entity User) Enrollment CourseId
 enrollmentCourse' = EntityFieldWrapper EnrollmentCourse
 
+{-@ measure enrollmentGrade :: Enrollment -> String @-}
+
+{-@ measure enrollmentGradeCap :: Entity Enrollment -> Bool @-}
+
 {-@ assume enrollmentGrade' :: EntityFieldWrapper <
-    {\row viewer -> StudentOrInstructor row viewer}
-  , {\row field  -> field == enrollmentGrade (entityVal row)}
-  , {\field row  -> field == enrollmentGrade (entityVal row)}
-  > _ _
+    {\x_0 x_1 -> (entityKey x_1 == enrollmentStudent (entityVal x_0) || isInstructor (entityKey x_1) (enrollmentCourse (entityVal x_0)))}
+  , {\row field -> field == enrollmentGrade (entityVal row)}
+  , {\field row -> field == enrollmentGrade (entityVal row)}
+  , {\old -> enrollmentGradeCap old}
+  , {\old _ _ -> enrollmentGradeCap old}
+  > (Entity User) Enrollment String
 @-}
-enrollmentGrade' :: EntityFieldWrapper Enrollment String
+enrollmentGrade' :: EntityFieldWrapper (Entity User) Enrollment String
 enrollmentGrade' = EntityFieldWrapper EnrollmentGrade
 
 -- * Assignment
-
-{-@ data Assignment = Assignment
-  { assignmentName :: _
-  , assignmentCourse :: _
-  , assignmentDescription :: _
-  }
+{-@ mkAssignment ::
+     x_0: Text
+  -> x_1: CourseId
+  -> x_2: Text
+  -> BinahRecord <
+       {\row -> assignmentName (entityVal row) == x_0 && assignmentCourse (entityVal row) == x_1 && assignmentDescription (entityVal row) == x_2}
+     , {\_ _ -> True}
+     , {\x_0 x_1 -> (isEnrolled (entityKey x_1) (assignmentCourse (entityVal x_0)) || isInstructor (entityKey x_1) (assignmentCourse (entityVal x_0)))}
+     > (Entity User) Assignment
 @-}
+mkAssignment :: Text -> CourseId -> Text -> BinahRecord (Entity User) Assignment
+mkAssignment x_0 x_1 x_2 = BinahRecord (Assignment x_0 x_1 x_2)
 
 {-@ invariant {v: Entity Assignment | v == getJust (entityKey v)} @-}
 
@@ -280,47 +430,72 @@ enrollmentGrade' = EntityFieldWrapper EnrollmentGrade
     {\row viewer -> True}
   , {\row field  -> field == entityKey row}
   , {\field row  -> field == entityKey row}
-  > _ _
+  , {\_ -> False}
+  , {\_ _ _ -> True}
+  > (Entity User) Assignment AssignmentId
 @-}
-assignmentId' :: EntityFieldWrapper Assignment AssignmentId
+assignmentId' :: EntityFieldWrapper (Entity User) Assignment AssignmentId
 assignmentId' = EntityFieldWrapper AssignmentId
 
+{-@ measure assignmentName :: Assignment -> Text @-}
+
+{-@ measure assignmentNameCap :: Entity Assignment -> Bool @-}
+
 {-@ assume assignmentName' :: EntityFieldWrapper <
-    {\row viewer -> True}
-  , {\row field  -> field == assignmentName (entityVal row)}
-  , {\field row  -> field == assignmentName (entityVal row)}
-  > _ _
+    {\_ _ -> True}
+  , {\row field -> field == assignmentName (entityVal row)}
+  , {\field row -> field == assignmentName (entityVal row)}
+  , {\old -> assignmentNameCap old}
+  , {\old _ _ -> assignmentNameCap old}
+  > (Entity User) Assignment Text
 @-}
-assignmentName' :: EntityFieldWrapper Assignment Text
+assignmentName' :: EntityFieldWrapper (Entity User) Assignment Text
 assignmentName' = EntityFieldWrapper AssignmentName
 
+{-@ measure assignmentCourse :: Assignment -> CourseId @-}
+
+{-@ measure assignmentCourseCap :: Entity Assignment -> Bool @-}
+
 {-@ assume assignmentCourse' :: EntityFieldWrapper <
-    {\row viewer -> True}
-  , {\row field  -> field == assignmentCourse (entityVal row)}
-  , {\field row  -> field == assignmentCourse (entityVal row)}
-  > _ _
+    {\_ _ -> True}
+  , {\row field -> field == assignmentCourse (entityVal row)}
+  , {\field row -> field == assignmentCourse (entityVal row)}
+  , {\old -> assignmentCourseCap old}
+  , {\old _ _ -> assignmentCourseCap old}
+  > (Entity User) Assignment CourseId
 @-}
-assignmentCourse' :: EntityFieldWrapper Assignment CourseId
+assignmentCourse' :: EntityFieldWrapper (Entity User) Assignment CourseId
 assignmentCourse' = EntityFieldWrapper AssignmentCourse
 
+{-@ measure assignmentDescription :: Assignment -> Text @-}
+
+{-@ measure assignmentDescriptionCap :: Entity Assignment -> Bool @-}
+
 {-@ assume assignmentDescription' :: EntityFieldWrapper <
-    {\row viewer -> EnrolledOrInstructor row viewer}
-  , {\row field  -> field == assignmentDescription (entityVal row)}
-  , {\field row  -> field == assignmentDescription (entityVal row)}
-  > _ _
+    {\x_0 x_1 -> (isEnrolled (entityKey x_1) (assignmentCourse (entityVal x_0)) || isInstructor (entityKey x_1) (assignmentCourse (entityVal x_0)))}
+  , {\row field -> field == assignmentDescription (entityVal row)}
+  , {\field row -> field == assignmentDescription (entityVal row)}
+  , {\old -> assignmentDescriptionCap old}
+  , {\old _ _ -> assignmentDescriptionCap old}
+  > (Entity User) Assignment Text
 @-}
-assignmentDescription' :: EntityFieldWrapper Assignment Text
+assignmentDescription' :: EntityFieldWrapper (Entity User) Assignment Text
 assignmentDescription' = EntityFieldWrapper AssignmentDescription
 
 -- * Submission
-
-{-@ data Submission = Submission
-  { submissionAssignment :: _
-  , submissionAuthor :: _
-  , submissionContent :: _
-  , submissionGrade :: _
-  }
+{-@ mkSubmission ::
+     x_0: AssignmentId
+  -> x_1: UserId
+  -> x_2: Text
+  -> x_3: String
+  -> BinahRecord <
+       {\row -> submissionAssignment (entityVal row) == x_0 && submissionAuthor (entityVal row) == x_1 && submissionContent (entityVal row) == x_2 && submissionGrade (entityVal row) == x_3}
+     , {\_ _ -> True}
+     , {\x_0 x_1 -> (submissionAuthor (entityVal x_0) == entityKey x_1 || isInstructor (entityKey x_1) (assignmentCourse (entityVal (getJust (submissionAssignment (entityVal x_0))))))}
+     > (Entity User) Submission
 @-}
+mkSubmission :: AssignmentId -> UserId -> Text -> String -> BinahRecord (Entity User) Submission
+mkSubmission x_0 x_1 x_2 x_3 = BinahRecord (Submission x_0 x_1 x_2 x_3)
 
 {-@ invariant {v: Entity Submission | v == getJust (entityKey v)} @-}
 
@@ -330,49 +505,69 @@ assignmentDescription' = EntityFieldWrapper AssignmentDescription
     {\row viewer -> True}
   , {\row field  -> field == entityKey row}
   , {\field row  -> field == entityKey row}
-  > _ _
+  , {\_ -> False}
+  , {\_ _ _ -> True}
+  > (Entity User) Submission SubmissionId
 @-}
-submissionId' :: EntityFieldWrapper Submission SubmissionId
+submissionId' :: EntityFieldWrapper (Entity User) Submission SubmissionId
 submissionId' = EntityFieldWrapper SubmissionId
 
+{-@ measure submissionAssignment :: Submission -> AssignmentId @-}
+
+{-@ measure submissionAssignmentCap :: Entity Submission -> Bool @-}
+
 {-@ assume submissionAssignment' :: EntityFieldWrapper <
-    {\row viewer -> True}
-  , {\row field  -> field == submissionAssignment (entityVal row)}
-  , {\field row  -> field == submissionAssignment (entityVal row)}
-  > _ _
+    {\_ _ -> True}
+  , {\row field -> field == submissionAssignment (entityVal row)}
+  , {\field row -> field == submissionAssignment (entityVal row)}
+  , {\old -> submissionAssignmentCap old}
+  , {\old _ _ -> submissionAssignmentCap old}
+  > (Entity User) Submission AssignmentId
 @-}
-submissionAssignment' :: EntityFieldWrapper Submission AssignmentId
+submissionAssignment' :: EntityFieldWrapper (Entity User) Submission AssignmentId
 submissionAssignment' = EntityFieldWrapper SubmissionAssignment
 
+{-@ measure submissionAuthor :: Submission -> UserId @-}
+
+{-@ measure submissionAuthorCap :: Entity Submission -> Bool @-}
+
 {-@ assume submissionAuthor' :: EntityFieldWrapper <
-    {\row viewer -> True}
-  , {\row field  -> field == submissionAuthor (entityVal row)}
-  , {\field row  -> field == submissionAuthor (entityVal row)}
-  > _ _
+    {\_ _ -> True}
+  , {\row field -> field == submissionAuthor (entityVal row)}
+  , {\field row -> field == submissionAuthor (entityVal row)}
+  , {\old -> submissionAuthorCap old}
+  , {\old _ _ -> submissionAuthorCap old}
+  > (Entity User) Submission UserId
 @-}
-submissionAuthor' :: EntityFieldWrapper Submission UserId
+submissionAuthor' :: EntityFieldWrapper (Entity User) Submission UserId
 submissionAuthor' = EntityFieldWrapper SubmissionAuthor
 
+{-@ measure submissionContent :: Submission -> Text @-}
+
+{-@ measure submissionContentCap :: Entity Submission -> Bool @-}
+
 {-@ assume submissionContent' :: EntityFieldWrapper <
-    {\row viewer -> AuthorOrInstructor row viewer}
-  , {\row field  -> field == submissionContent (entityVal row)}
-  , {\field row  -> field == submissionContent (entityVal row)}
-  > _ _
+    {\x_0 x_1 -> (submissionAuthor (entityVal x_0) == entityKey x_1 || isInstructor (entityKey x_1) (assignmentCourse (entityVal (getJust (submissionAssignment (entityVal x_0))))))}
+  , {\row field -> field == submissionContent (entityVal row)}
+  , {\field row -> field == submissionContent (entityVal row)}
+  , {\old -> submissionContentCap old}
+  , {\old _ _ -> submissionContentCap old}
+  > (Entity User) Submission Text
 @-}
-submissionContent' :: EntityFieldWrapper Submission Text
+submissionContent' :: EntityFieldWrapper (Entity User) Submission Text
 submissionContent' = EntityFieldWrapper SubmissionContent
 
+{-@ measure submissionGrade :: Submission -> String @-}
+
+{-@ measure submissionGradeCap :: Entity Submission -> Bool @-}
+
 {-@ assume submissionGrade' :: EntityFieldWrapper <
-    {\row viewer -> AuthorOrInstructor row viewer}
-  , {\row field  -> field == submissionGrade (entityVal row)}
-  , {\field row  -> field == submissionGrade (entityVal row)}
-  > _ _
+    {\x_0 x_1 -> (submissionAuthor (entityVal x_0) == entityKey x_1 || isInstructor (entityKey x_1) (assignmentCourse (entityVal (getJust (submissionAssignment (entityVal x_0))))))}
+  , {\row field -> field == submissionGrade (entityVal row)}
+  , {\field row -> field == submissionGrade (entityVal row)}
+  , {\old -> submissionGradeCap old}
+  , {\old _ _ -> submissionGradeCap old}
+  > (Entity User) Submission String
 @-}
-submissionGrade' :: EntityFieldWrapper Submission String
+submissionGrade' :: EntityFieldWrapper (Entity User) Submission String
 submissionGrade' = EntityFieldWrapper SubmissionGrade
-
---------------------------------------------------------------------------------
--- | Inline
---------------------------------------------------------------------------------
-
-

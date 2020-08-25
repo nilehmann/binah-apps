@@ -35,17 +35,10 @@ data SubmissionData = SubmissionData
 
 instance TemplateData SubmissionData where
   templateFile = "submission.show.html.mustache"
-
-instance ToMustache SubmissionData where
   toMustache (SubmissionData content grade) =
-    Mustache.object ["content" ~> toMustache content, "grade" ~> toMustache grade]
+    Mustache.object ["content" ~> content, "grade" ~> grade]
 
-
--- If I inline this function LH goes crazy
-theUpdate :: SubmissionId -> Text -> Controller ()
-theUpdate submissionId content = update submissionId (submissionContent' `assign` content)
-
-{-@ submissionShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
+{-@ submissionShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ _ @-}
 submissionShow :: Int64 -> Controller ()
 submissionShow sid = do
   let submissionId = toSqlKey sid
@@ -57,7 +50,8 @@ submissionShow sid = do
     then do
       params <- parseForm
       case lookup "content" params of
-        Just content -> theUpdate submissionId (decodeUtf8 content)
+        Just content -> updateWhere (submissionId' ==. submissionId)
+                                    (submissionContent' `assign` content)
         Nothing      -> returnTagged ()
     else returnTagged ()
 

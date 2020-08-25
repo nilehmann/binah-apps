@@ -6,7 +6,6 @@
 module Controllers.AssignmentShow where
 
 import           Database.Persist.Sql           ( toSqlKey )
-import           Data.Int                       ( Int64 )
 import           Data.Text                      ( Text )
 import           Text.Mustache                  ( (~>)
                                                 , ToMustache(..)
@@ -30,16 +29,13 @@ data AssignmentData = AssignmentData { assignmentDataDescription :: Text }
 
 instance TemplateData AssignmentData where
   templateFile = "assignment.show.html.mustache"
-
-instance ToMustache AssignmentData where
   toMustache (AssignmentData description) =
-    Mustache.object ["description" ~> toMustache description]
+    Mustache.object ["description" ~> description]
 
 
-{-@ assignmentShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
-assignmentShow :: Int64 -> Controller ()
-assignmentShow aid = do
-  let assignmentId = toSqlKey aid
+{-@ assignmentShow :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ _ @-}
+assignmentShow :: AssignmentId -> Controller ()
+assignmentShow assignmentId = do
   viewer          <- requireAuthUser
   viewerId        <- project userId' viewer
   maybeAssignment <- selectFirst (assignmentId' ==. assignmentId)

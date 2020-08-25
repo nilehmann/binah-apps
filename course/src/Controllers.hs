@@ -29,18 +29,15 @@ data Config = Config
   , configAuthMethod :: !(AuthMethod (Entity User) Controller)
   }
 
-type Controller = TaggedT (ReaderT SqlBackend (ConfigT Config (ControllerT TIO)))
+type Controller = TaggedT (Entity User) (ReaderT SqlBackend (ConfigT Config (ControllerT TIO)))
 
 instance HasTemplateCache Config where
   getTemplateCache = configTemplateCache
 
-instance HasSqlBackend Config where
-  getSqlBackend = configBackend
-
 instance HasAuthMethod (Entity User) Controller Config where
   getAuthMethod = configAuthMethod
 
-{-@ respondHtml :: _ -> TaggedT<{\_ -> True}, {\v -> v == currentUser}> _ _ @-}
+{-@ respondHtml :: _ -> TaggedT<{\_ -> True}, {\v -> v == currentUser 0}> _ _ _ @-}
 respondHtml :: TemplateData a => a -> Controller b
 respondHtml d = do
   page <- renderTemplate d

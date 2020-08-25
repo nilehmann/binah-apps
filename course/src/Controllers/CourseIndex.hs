@@ -6,7 +6,6 @@
 module Controllers.CourseIndex where
 
 import           Database.Persist.Sql           ( toSqlKey )
-import           Data.Int                       ( Int64 )
 import           Data.Text                      ( Text )
 import           Text.Mustache                  ( (~>)
                                                 , ToMustache(..)
@@ -30,9 +29,7 @@ data CourseIndex = CourseIndex [CourseData]
 
 instance TemplateData CourseIndex where
   templateFile = "course.index.html.mustache"
-
-instance ToMustache CourseIndex where
-  toMustache (CourseIndex courses) = Mustache.object ["courses" ~> map toMustache courses]
+  toMustache (CourseIndex courses) = Mustache.object ["courses" ~> courses]
 
 data CourseData = CourseData
   { courseDataId :: CourseId
@@ -42,12 +39,12 @@ data CourseData = CourseData
 
 instance ToMustache CourseData where
   toMustache (CourseData id name grade) = Mustache.object
-    [ "course_id" ~> toMustache (keyToText id)
-    , "name" ~> toMustache name
-    , "grade" ~> toMustache grade
+    [ "course_id" ~> keyToText id
+    , "name" ~> name
+    , "grade" ~> grade
     ]
 
-{-@ joinWithCourses :: _ -> TaggedT<{\_ -> True}, {\_ ->False}> _ _ @-}
+{-@ joinWithCourses :: _ -> TaggedT<{\_ -> True}, {\_ ->False}> _ _ _ @-}
 joinWithCourses :: [(CourseId, String)] -> Controller [CourseData]
 joinWithCourses gradesByCourse = do
   courses     <- selectList (courseId' <-. map fst gradesByCourse)
@@ -55,7 +52,7 @@ joinWithCourses gradesByCourse = do
   returnTagged $ innerJoin CourseData coursesById gradesByCourse
 
 
-{-@ courseIndex :: TaggedT<{\_ -> False}, {\_ -> True}> _ _ @-}
+{-@ courseIndex :: TaggedT<{\_ -> False}, {\_ -> True}> _ _ _ @-}
 courseIndex :: Controller ()
 courseIndex = do
   viewer         <- requireAuthUser
