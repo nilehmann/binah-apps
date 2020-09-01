@@ -81,7 +81,8 @@ httpAuthDb = httpBasicAuth $ \username _password -> selectFirst (userName' ==. u
 initDB :: IO ()
 initDB = runSqlite "db.sqlite" $ do
     runMigration migrateAll
-    let (BinahRecord nadia) = (mkUser "nadia" "Nadia Polikarpova" "npolikarpova@ucsd.edu" "ucsd" "chair")
+    let (BinahRecord nadia) =
+        (mkUser "nadia" "Nadia Polikarpova" "npolikarpova@ucsd.edu" "ucsd" "chair")
     Persistent.insert nadia
     let (BinahRecord ranjit) = (mkUser "ranjit" "Ranjit Jhala" "npolikarpova@ucsd.edu" "ucsd" "pc")
     Persistent.insert ranjit
@@ -92,7 +93,10 @@ initDB = runSqlite "db.sqlite" $ do
 
 -- TODO find a way to provide this without exposing the instance of MonadBaseControl
 
-initFromPool :: Config -> Pool SqlBackend -> Controller () -> TaggedT (Entity User) (ControllerT TIO) ()
+initFromPool :: Config
+             -> Pool SqlBackend
+             -> Controller ()
+             -> TaggedT (Entity User) (ControllerT TIO) ()
 initFromPool cfg pool = mapTaggedT run
     where run act = Pool.withResource pool $ configure cfg . runReaderT act
 

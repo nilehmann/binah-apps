@@ -202,7 +202,8 @@ acceptFriendship
 acceptFriendship :: UserId -> UserId -> Controller ()
 acceptFriendship user1 user2 = do
   let up = friendshipStatus' `assign` "accepted"
-  let f  = friendshipUser1' ==. user1 &&: friendshipUser2' ==. user2 -- &&: friendshipStatus ==. "pending"
+  let f  = friendshipUser1' ==. user1 &&: friendshipUser2' ==. user2
+           -- &&: friendshipStatus ==. "pending"
   updateWhere f up
 
 {-@

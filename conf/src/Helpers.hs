@@ -19,31 +19,38 @@ import           Binah.Frankie
 import           Model
 import           Controllers
 
-{-@ pc :: u: Entity User -> TaggedT<{\_ -> True}, {\_ -> False}> _ _ {v: Bool | v <=> IsPc u} @-}
+{-@ pc :: u:_ -> TaggedT<{\_ -> True}, {\_ -> False}> _ _ {v: Bool | v <=> IsPc u} @-}
 pc :: Monad m => Entity User -> TaggedT (Entity User) m Bool
 pc user = do
   level <- project userLevel' user
   return (level == "chair" || level == "pc")
 
-{-@ chair :: u: Entity User -> TaggedT<{\_ -> True}, {\_ -> False}> _ _ {v: Bool | v <=> IsChair u} @-}
+{-@ chair :: u:_ -> TaggedT<{\_ -> True}, {\_ -> False}> _ _ {v: Bool | v <=> IsChair u} @-}
 chair :: Monad m => Entity User -> TaggedT (Entity User) m Bool
 chair user = do
   level <- project userLevel' user
   return (level == "chair")
 
-{-@ checkPcOr :: _ -> u:_ -> TaggedT<{\_ -> True}, {\v -> v == currentUser 0}> _ _ {v: () | IsPc u} @-}
+{-@ checkPcOr :: Response
+              -> u:Entity User
+              -> TaggedT<{\_ -> True}, {\v -> v == currentUser 0}> _ _ {v: () | IsPc u} @-}
 checkPcOr :: Response -> Entity User -> Controller ()
 checkPcOr response user = do
   level <- project userLevel' user
   if (level == "chair" || level == "pc") then return () else respondTagged response
 
-{-@ checkChairOr :: _ -> u:_ -> TaggedT<{\_ -> True}, {\v -> v == currentUser 0}> _ _ {v: () | IsChair u} @-}
+{-@ checkChairOr :: Response
+                 -> u: Entity user
+                 -> TaggedT<{\_ -> True}, {\v -> v == currentUser 0}> _ _ {v: () | IsChair u} @-}
 checkChairOr :: Response -> Entity User -> Controller ()
 checkChairOr response user = do
   level <- project userLevel' user
   if level == "chair" then return () else respondTagged response
 
-{-@ checkStageOr :: _ -> s:_  -> TaggedT<{\_ -> True}, {\v -> v == currentUser 0}> _ _ {v: () | s == currentStage} @-}
+{-@ checkStageOr
+  :: Response
+  -> s:String
+  -> TaggedT<{\_ -> True}, {\v -> v == currentUser 0}> _ _ {v: () | s == currentStage} @-}
 checkStageOr :: Response -> String -> Controller ()
 checkStageOr response stage = if currentStage == stage then return () else respondTagged response
 
