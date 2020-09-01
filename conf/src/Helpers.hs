@@ -40,7 +40,7 @@ checkPcOr response user = do
   if (level == "chair" || level == "pc") then return () else respondTagged response
 
 {-@ checkChairOr :: Response
-                 -> u: Entity user
+                 -> u: Entity User
                  -> TaggedT<{\_ -> True}, {\v -> v == currentUser 0}> _ _ {v: () | IsChair u} @-}
 checkChairOr :: Response -> Entity User -> Controller ()
 checkChairOr response user = do
