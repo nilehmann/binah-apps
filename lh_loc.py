@@ -13,36 +13,36 @@ COMMENT_END = re.compile(r".*-}\s*")
 TRIVIAL = re.compile(r"TaggedT\s*<\s*{\s*\\_\s*->\s*False\s*},\s*{\\_\s*->\s*True\s*}\s*>")
 CLI_ARG = re.compile(r"LIQUID")
 
-def do_loc(path):
+def do_loc(path, max_columns):
     c = collections.Counter({})
 
     annot = ""
     in_lh = False
     in_comment = False
     for line in open(path, 'r'):
-        line = line.strip()
+        stripped = line.strip()
         
         # An empty line
-        if not line:
+        if not stripped:
             c['empty'] += 1
             continue
 
         # A single line comment
-        if line.startswith('--'):
+        if stripped.startswith('--'):
             c['comments'] += 1
             continue
 
-        assert len(line) <= 100, line
+        assert len(line) <= max_columns, line
 
         # An import
         if line.startswith("import"):
             c['imports'] += 1
 
-        if COMMENT_START.fullmatch(line) is not None:
+        if COMMENT_START.fullmatch(stripped) is not None:
             assert not in_comment
             in_comment = True
 
-        if LH_START.fullmatch(line) is not None:
+        if LH_START.fullmatch(stripped) is not None:
             assert not in_lh
             in_lh = True
 
@@ -51,14 +51,12 @@ def do_loc(path):
         c['loc'] += not in_comment
 
         if in_lh:
-            annot += line
+            annot += stripped
 
-        if COMMENT_END.fullmatch(line) is not None:
-            assert in_comment
+        if in_comment and COMMENT_END.fullmatch(stripped) is not None:
             in_comment = False
 
-        if LH_END.fullmatch(line) is not None:
-            assert in_lh
+        if in_lh and LH_END.fullmatch(stripped) is not None:
             if TRIVIAL.search(annot):
                 print(annot)
                 c['trivial'] += 1
@@ -78,8 +76,11 @@ def main():
     parser.add_argument('-e', '--exclude',
                         action="append",
                         help='Regex pattern to exclude')
-    parser.set_defaults(exclude=["Setup\.hs", "test/", "Model.hs", "Binah/.*"])
+    parser.add_argument('--columns', type=int, help="Maximum number of columns")
+    # parser.set_defaults(exclude=["Setup\.hs", "test/", "Model.hs", "Binah/.*"])
+    parser.set_defaults(exclude=[])
     parser.set_defaults(pattern="**/*.hs")
+    parser.set_defaults(columns=100)
 
     args = parser.parse_args()
 
@@ -90,7 +91,9 @@ def main():
         if should_exclude:
             continue
         try:
-            locs += do_loc(path)
+            a = do_loc(path, args.columns)
+            print(a, path)
+            locs += do_loc(path, args.columns)
         except Exception as e:
             print(path)
             raise e
