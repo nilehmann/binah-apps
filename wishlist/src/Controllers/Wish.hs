@@ -36,7 +36,6 @@ import           Model
 
 import           Helpers
 import           Controllers
-import           Control.Monad                  ( when )
 
 -----------------------------------------------------------------------------------
 -- | New Wish
@@ -59,11 +58,8 @@ wishNew = do
   if reqMethod req == methodPost then insertWish viewerId else respondHtml (WishNew "/wish")
 
 
-{-@
-insertWish
-  :: {v: UserId | v == entityKey (currentUser 0)}
-  -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ _
-@-}
+{-@ insertWish :: {v: UserId | v == entityKey (currentUser 0)} ->
+  TaggedT<{\_ -> False}, {\_ -> True}> _ _ _ @-}
 insertWish :: UserId -> Controller ()
 insertWish userId = do
   params <- parseForm
@@ -98,7 +94,7 @@ wishEdit :: Int64 -> Controller ()
 wishEdit wid = do
   let wishId = toSqlKey wid
   req <- request
-  when (reqMethod req == methodPost) (updateWish wishId)
+  whenT (reqMethod req == methodPost) (updateWish wishId)
   wishData <- getWishData wishId
   respondHtml (WishEdit (wishEditRoute wishId) wishData)
 
@@ -182,23 +178,15 @@ wishEditRoute :: WishId -> String
 wishEditRoute wishId = printf "/wish/%d/edit" wid where wid = fromSqlKey wishId
 
 
-{-@
-friendRequest
-  :: {v: UserId | entityKey (currentUser 0) == v}
-  -> UserId
-  -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ _
-@-}
+{-@ friendRequest :: {v: UserId | entityKey (currentUser 0) == v} -> UserId ->
+  TaggedT<{\_ -> True}, {\_ -> True}> _ _ _ @-}
 friendRequest :: UserId -> UserId -> Controller ()
 friendRequest user1 user2 = do
   _ <- insert (mkFriendship user1 user2 "pending")
   return ()
 
-{-@
-acceptFriendship
-  :: UserId
-  -> {v: UserId | entityKey (currentUser 0) == v}
-  -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ _
-@-}
+{-@ acceptFriendship :: UserId -> {v: UserId | entityKey (currentUser 0) == v} ->
+  TaggedT<{\_ -> True}, {\_ -> True}> _ _ _ @-}
 acceptFriendship :: UserId -> UserId -> Controller ()
 acceptFriendship user1 user2 = do
   let up = friendshipStatus' `assign` "accepted"
@@ -206,9 +194,7 @@ acceptFriendship user1 user2 = do
            -- &&: friendshipStatus ==. "pending"
   updateWhere f up
 
-{-@
-rejectFriendship :: FriendshipId -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ _
-@-}
+{-@ rejectFriendship :: FriendshipId -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ _ @-}
 rejectFriendship :: FriendshipId -> Controller ()
 rejectFriendship friendshipId = do
   viewer     <- requireAuthUser

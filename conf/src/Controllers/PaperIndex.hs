@@ -79,10 +79,7 @@ getAcceptedPapers = do
   joinWithAuthors $ zip authorIds paperData
 
 
-{-@
-getMyPapers ::
-  v: _ -> TaggedT<{\u -> (entityKey v) == (entityKey u)}, {\_ -> False}> _ _ _
-@-}
+{-@ getMyPapers :: v: _ -> TaggedT<{\u -> (entityKey v) == (entityKey u)}, {\_ -> False}> _ _ _ @-}
 getMyPapers :: Entity User -> Controller [RowData]
 getMyPapers viewer = do
   viewerId   <- project userId' viewer

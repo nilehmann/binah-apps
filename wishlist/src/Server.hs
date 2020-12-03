@@ -43,11 +43,9 @@ readConfig = do
 initDB :: IO ()
 initDB = runSqlite "db.sqlite" (runMigration migrateAll)
 
-{-@ ignore httpAuthDb @-}
 httpAuthDb :: AuthMethod (Entity User) Controller
 httpAuthDb = httpBasicAuth $ \username _password -> selectFirst (userName' ==. username)
 
-{-@ ignore runServer @-}
 runServer :: IO ()
 runServer = runSqlite "db.sqlite" $ do
     backend <- ask

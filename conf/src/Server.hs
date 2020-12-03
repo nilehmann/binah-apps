@@ -73,7 +73,6 @@ runServer = runNoLoggingT $ do
 
             fallback $ respond notFound
 
-{-@ ignore httpAuthDb @-}
 httpAuthDb :: AuthMethod (Entity User) Controller
 httpAuthDb = httpBasicAuth $ \username _password -> selectFirst (userName' ==. username)
 

@@ -111,11 +111,8 @@ paperEdit pid = do
         Nothing             -> respondTagged notFound
         Just (paperData, _) -> respondHtml $ PaperEdit paperId paperData
 
-{-@ updatePaper
-  :: {v: UserId | v == entityKey (currentUser 0)}
-  -> PaperId
-  -> TaggedT<{\v -> v == currentUser 0}, {\_ -> True}> _ _ _
-@-}
+{-@ updatePaper :: {v: UserId | v == entityKey (currentUser 0)} -> PaperId
+  -> TaggedT<{\v -> v == currentUser 0}, {\_ -> True}> _ _ _ @-}
 updatePaper :: UserId -> PaperId -> Controller ()
 updatePaper viewerId paperId = do
   _      <- checkStageOr forbidden "submit"
@@ -142,10 +139,8 @@ paperNew = do
   req      <- request
   if reqMethod req == methodPost then insertPaper viewerId else respondHtml PaperNew
 
-{-@ insertPaper ::
-     {u:_ | u == entityKey (currentUser 0)}
-  -> TaggedT<{\v -> v == currentUser 0}, {\_ -> True}> _ _ _
-@-}
+{-@ insertPaper :: {u:_ | u == entityKey (currentUser 0)} ->
+  TaggedT<{\v -> v == currentUser 0}, {\_ -> True}> _ _ _ @-}
 insertPaper :: UserId -> Controller ()
 insertPaper authorId = do
   params <- parseForm
@@ -197,11 +192,8 @@ paperChair pid = do
   respondHtml $ PaperChair paper (map (uncurry UserData) pcsData) reviewers
 
 {-@
-assignReviewer
-  :: {u: Entity User | IsChair u && u == currentUser 0}
-  -> PaperId
-  -> TaggedT<{\_ -> True}, {\_ -> True}> _ _ _
-@-}
+assignReviewer :: {u: Entity User | IsChair u && u == currentUser 0} -> PaperId ->
+  TaggedT<{\_ -> True}, {\_ -> True}> _ _ _ @-}
 assignReviewer :: Entity User -> PaperId -> Controller ()
 assignReviewer _ paperId = do
   params <- parseForm
@@ -246,11 +238,10 @@ getPaper paperId = do
   return $ (PaperData paperId title abstract authors)
 
 
-{-@ getReviews ::
-  p: _ ->
-  TaggedT<{\v -> IsPc v ||
-                 (currentStage == "public" && isAuthor (entityKey v) (entityKey p))},
-          {\_ -> False}> _ _ _ @-}
+{-@ getReviews :: p: _ ->
+  TaggedT< {\v -> IsPc v || (currentStage == "public" && isAuthor (entityKey v) (entityKey p))},
+         , {\_ -> False}
+         > _ _ _ @-}
 getReviews :: Entity Paper -> Controller [AnonymousReview]
 getReviews paper = do
   paperId     <- project paperId' paper

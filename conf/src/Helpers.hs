@@ -31,9 +31,8 @@ chair user = do
   level <- project userLevel' user
   return (level == "chair")
 
-{-@ checkPcOr :: Response
-              -> u:Entity User
-              -> TaggedT<{\_ -> True}, {\v -> v == currentUser 0}> _ _ {v: () | IsPc u} @-}
+{-@ checkPcOr :: Response -> u:Entity User ->
+  TaggedT<{\_ -> True}, {\v -> v == currentUser 0}> _ _ {v: () | IsPc u} @-}
 checkPcOr :: Response -> Entity User -> Controller ()
 checkPcOr response user = do
   level <- project userLevel' user
@@ -47,9 +46,7 @@ checkChairOr response user = do
   level <- project userLevel' user
   if level == "chair" then return () else respondTagged response
 
-{-@ checkStageOr
-  :: Response
-  -> s:String
+{-@ checkStageOr :: Response -> s:String
   -> TaggedT<{\_ -> True}, {\v -> v == currentUser 0}> _ _ {v: () | s == currentStage} @-}
 checkStageOr :: Response -> String -> Controller ()
 checkStageOr response stage = if currentStage == stage then return () else respondTagged response
