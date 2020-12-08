@@ -8,8 +8,8 @@ import           Database.Persist.Sql           ( toSqlKey
                                                 , fromSqlKey
                                                 )
 import           Data.Int                       ( Int64 )
-import           Data.Text                      ( Text )
 import qualified Data.Text                     as Text
+import           Data.Text                      ( Text )
 import           Data.Text.Encoding             ( decodeUtf8
                                                 , encodeUtf8
                                                 )
@@ -136,6 +136,18 @@ wishShow wid = do
   wishData <- getWishData wishId
   respondHtml (WishShow wishData)
 
+{-@ showWishes :: _ -> TaggedT<{\_ -> False}, {\_ -> True}> _ _ _ @-}
+showWishes :: UserId -> Controller ()
+showWishes ownerId = do
+  viewer   <- requireAuthUser
+  viewerId <- project userId' viewer
+  let pub = wishAccessLevel' ==. "public"
+  let chk = if viewerId == ownerId then trueF else pub
+  let query = (wishOwner' ==. ownerId) &&: chk
+  wishes <- selectList query
+  descrs <- projectList wishDescription' wishes
+  respondTagged notFound
+
 -----------------------------------------------------------------------------------
 -- | Misc
 -----------------------------------------------------------------------------------
@@ -165,7 +177,6 @@ getWishData wishId = do
     _                     -> respondTagged forbidden
 
   return (WishData descr level)
-
 
 wishRoute :: WishId -> ByteString
 wishRoute wishId = encodeUtf8 (Text.pack path)

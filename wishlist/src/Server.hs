@@ -63,3 +63,5 @@ runServer = runSqlite "db.sqlite" $ do
             get "/wish/:wid/edit" wishEdit
             post "/wish/:wid/edit" wishEdit
             fallback $ respond notFound
+
+{-@ LIQUID "--compile-spec" @-}

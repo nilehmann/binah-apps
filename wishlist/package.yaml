@@ -20,15 +20,17 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/nilehmann/whishlist#readme>
 
 dependencies:
-- base >= 4.7 && < 5
+- liquid-base
+- liquidhaskell
+- binah
+- frankie
+- persistent
+- persistent-template
 - base64-bytestring
 - bytestring
 - either
-- frankie
 - mtl
 - mustache
-- persistent
-- persistent-template
 - persistent-sqlite
 - text
 - transformers
@@ -39,6 +41,7 @@ dependencies:
 
 library:
   source-dirs: src
+  ghc-options: -fplugin=LiquidHaskell
 
 executables:
   whishlist-exe:
