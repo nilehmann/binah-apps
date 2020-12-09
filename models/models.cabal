@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Hails.Gitstar.Model
+      Jacqueline.Health.Model
       Lib
       UrWeb.Calendar.Model
       UrWeb.Forum.Model
