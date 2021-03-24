@@ -61,7 +61,7 @@ import           Database.Persist.TH            ( share
                                                 )
 import qualified Database.Persist              as Persist
 
-import           Binah.Core
+import           Storm.Core
 
 
 
@@ -138,13 +138,13 @@ Student
 {-@ mkUser ::
         x_0: String
      -> x_1: String
-     -> BinahRecord <{\row -> userName (entityVal row) == x_0 && userPass (entityVal row) == x_1},
+     -> StormRecord <{\row -> userName (entityVal row) == x_0 && userPass (entityVal row) == x_1},
                      {\_ _ -> True},
                      {\x_0 x_1 -> (x_0 == x_1)}>
                      (Entity User) User
   @-}
-mkUser :: String -> String -> BinahRecord (Entity User) User
-mkUser x_0 x_1 = BinahRecord (User x_0 x_1)
+mkUser :: String -> String -> StormRecord (Entity User) User
+mkUser x_0 x_1 = StormRecord (User x_0 x_1)
 
 {-@ invariant {v: Entity User | v == getJust (entityKey v)} @-}
 
@@ -194,13 +194,13 @@ userPass' = EntityFieldWrapper UserPass
 -- * RootAdmin
 {-@ mkRootAdmin ::
         x_0: UserId
-     -> BinahRecord <{\row -> rootAdminUser (entityVal row) == x_0},
+     -> StormRecord <{\row -> rootAdminUser (entityVal row) == x_0},
                      {\_ _ -> True},
                      {\x_0 x_1 -> False}>
                      (Entity User) RootAdmin
   @-}
-mkRootAdmin :: UserId -> BinahRecord (Entity User) RootAdmin
-mkRootAdmin x_0 = BinahRecord (RootAdmin x_0)
+mkRootAdmin :: UserId -> StormRecord (Entity User) RootAdmin
+mkRootAdmin x_0 = StormRecord (RootAdmin x_0)
 
 {-@ invariant {v: Entity RootAdmin | v == getJust (entityKey v)} @-}
 
@@ -235,13 +235,13 @@ rootAdminUser' = EntityFieldWrapper RootAdminUser
 -- * Course
 {-@ mkCourse ::
         x_0: String
-     -> BinahRecord <{\row -> courseName (entityVal row) == x_0},
+     -> StormRecord <{\row -> courseName (entityVal row) == x_0},
                      {\_ user -> IsAdmin user},
                      {\x_0 x_1 -> False}>
                      (Entity User) Course
   @-}
-mkCourse :: String -> BinahRecord (Entity User) Course
-mkCourse x_0 = BinahRecord (Course x_0)
+mkCourse :: String -> StormRecord (Entity User) Course
+mkCourse x_0 = StormRecord (Course x_0)
 
 {-@ invariant {v: Entity Course | v == getJust (entityKey v)} @-}
 
@@ -277,13 +277,13 @@ courseName' = EntityFieldWrapper CourseName
 {-@ mkInstructor ::
         x_0: CourseId
      -> x_1: UserId
-     -> BinahRecord <{\row -> instructorCourse (entityVal row) == x_0 && instructorUser (entityVal row) == x_1},
+     -> StormRecord <{\row -> instructorCourse (entityVal row) == x_0 && instructorUser (entityVal row) == x_1},
                      {\_ user -> IsAdmin user},
                      {\x_0 x_1 -> False}>
                      (Entity User) Instructor
   @-}
-mkInstructor :: CourseId -> UserId -> BinahRecord (Entity User) Instructor
-mkInstructor x_0 x_1 = BinahRecord (Instructor x_0 x_1)
+mkInstructor :: CourseId -> UserId -> StormRecord (Entity User) Instructor
+mkInstructor x_0 x_1 = StormRecord (Instructor x_0 x_1)
 
 {-@ invariant {v: Entity Instructor | v == getJust (entityKey v)} @-}
 
@@ -334,13 +334,13 @@ instructorUser' = EntityFieldWrapper InstructorUser
 {-@ mkTA ::
         x_0: CourseId
      -> x_1: UserId
-     -> BinahRecord <{\row -> tACourse (entityVal row) == x_0 && tAUser (entityVal row) == x_1},
+     -> StormRecord <{\row -> tACourse (entityVal row) == x_0 && tAUser (entityVal row) == x_1},
                      {\row user -> IsAdmin user || IsInstructorT user row},
                      {\x_0 x_1 -> False}>
                      (Entity User) TA
   @-}
-mkTA :: CourseId -> UserId -> BinahRecord (Entity User) TA
-mkTA x_0 x_1 = BinahRecord (TA x_0 x_1)
+mkTA :: CourseId -> UserId -> StormRecord (Entity User) TA
+mkTA x_0 x_1 = StormRecord (TA x_0 x_1)
 
 {-@ invariant {v: Entity TA | v == getJust (entityKey v)} @-}
 
@@ -392,13 +392,13 @@ tAUser' = EntityFieldWrapper TAUser
         x_0: CourseId
      -> x_1: UserId
      -> x_2: Maybe String
-     -> BinahRecord <{\row -> studentCourse (entityVal row) == x_0 && studentUser (entityVal row) == x_1 && studentGrade (entityVal row) == x_2},
+     -> StormRecord <{\row -> studentCourse (entityVal row) == x_0 && studentUser (entityVal row) == x_1 && studentGrade (entityVal row) == x_2},
                      {\row user -> IsAdmin user || IsInstructorS user row},
                      {\x_0 x_1 -> (IsInstructorS x_1 x_0 || studentUser (entityVal x_0) == entityKey x_1 || IsTAS x_1 x_0)}>
                      (Entity User) Student
   @-}
-mkStudent :: CourseId -> UserId -> Maybe String -> BinahRecord (Entity User) Student
-mkStudent x_0 x_1 x_2 = BinahRecord (Student x_0 x_1 x_2)
+mkStudent :: CourseId -> UserId -> Maybe String -> StormRecord (Entity User) Student
+mkStudent x_0 x_1 x_2 = StormRecord (Student x_0 x_1 x_2)
 
 {-@ invariant {v: Entity Student | v == getJust (entityKey v)} @-}
 

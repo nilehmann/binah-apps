@@ -52,7 +52,7 @@ import           Database.Persist.TH            ( share
                                                 )
 import qualified Database.Persist              as Persist
 
-import           Binah.Core
+import           Storm.Core
 
 
 
@@ -114,13 +114,13 @@ TimeOnly
 {-@ mkUser ::
         x_0: String
      -> x_1: String
-     -> BinahRecord <{\row -> userName (entityVal row) == x_0 && userPass (entityVal row) == x_1},
+     -> StormRecord <{\row -> userName (entityVal row) == x_0 && userPass (entityVal row) == x_1},
                      {\_ _ -> True},
                      {\x_0 x_1 -> (x_0 == x_1)}>
                      (Entity User) User
   @-}
-mkUser :: String -> String -> BinahRecord (Entity User) User
-mkUser x_0 x_1 = BinahRecord (User x_0 x_1)
+mkUser :: String -> String -> StormRecord (Entity User) User
+mkUser x_0 x_1 = StormRecord (User x_0 x_1)
 
 {-@ invariant {v: Entity User | v == getJust (entityKey v)} @-}
 
@@ -173,13 +173,13 @@ userPass' = EntityFieldWrapper UserPass
      -> x_1: Int
      -> x_2: String
      -> x_3: String
-     -> BinahRecord <{\row -> eventCreator (entityVal row) == x_0 && eventTime (entityVal row) == x_1 && eventTitle (entityVal row) == x_2 && eventDesc (entityVal row) == x_3},
+     -> StormRecord <{\row -> eventCreator (entityVal row) == x_0 && eventTime (entityVal row) == x_1 && eventTitle (entityVal row) == x_2 && eventDesc (entityVal row) == x_3},
                      {\event viewer -> eventCreator (entityVal event) == entityKey viewer},
                      {\x_0 x_1 -> (eventCreator (entityVal x_0) == entityKey x_1 || isAttendee (entityKey x_1) (entityKey x_0)) || (hasTimeAccess (entityKey x_1) (entityKey x_0))}>
                      (Entity User) Event
   @-}
-mkEvent :: UserId -> Int -> String -> String -> BinahRecord (Entity User) Event
-mkEvent x_0 x_1 x_2 x_3 = BinahRecord (Event x_0 x_1 x_2 x_3)
+mkEvent :: UserId -> Int -> String -> String -> StormRecord (Entity User) Event
+mkEvent x_0 x_1 x_2 x_3 = StormRecord (Event x_0 x_1 x_2 x_3)
 
 {-@ invariant {v: Entity Event | v == getJust (entityKey v)} @-}
 
@@ -260,13 +260,13 @@ eventDesc' = EntityFieldWrapper EventDesc
 {-@ mkAttendee ::
         x_0: EventId
      -> x_1: UserId
-     -> BinahRecord <{\row -> attendeeEvent (entityVal row) == x_0 && attendeeUser (entityVal row) == x_1},
+     -> StormRecord <{\row -> attendeeEvent (entityVal row) == x_0 && attendeeUser (entityVal row) == x_1},
                      {\row user -> entityKey user == eventCreator (entityVal (getJust (attendeeEvent (entityVal row))))},
                      {\x_0 x_1 -> False}>
                      (Entity User) Attendee
   @-}
-mkAttendee :: EventId -> UserId -> BinahRecord (Entity User) Attendee
-mkAttendee x_0 x_1 = BinahRecord (Attendee x_0 x_1)
+mkAttendee :: EventId -> UserId -> StormRecord (Entity User) Attendee
+mkAttendee x_0 x_1 = StormRecord (Attendee x_0 x_1)
 
 {-@ invariant {v: Entity Attendee | v == getJust (entityKey v)} @-}
 
@@ -317,13 +317,13 @@ attendeeUser' = EntityFieldWrapper AttendeeUser
 {-@ mkTimeOnly ::
         x_0: EventId
      -> x_1: UserId
-     -> BinahRecord <{\row -> timeOnlyEvent (entityVal row) == x_0 && timeOnlyUser (entityVal row) == x_1},
+     -> StormRecord <{\row -> timeOnlyEvent (entityVal row) == x_0 && timeOnlyUser (entityVal row) == x_1},
                      {\row user -> entityKey user == eventCreator (entityVal (getJust (timeOnlyEvent (entityVal row))))},
                      {\x_0 x_1 -> False}>
                      (Entity User) TimeOnly
   @-}
-mkTimeOnly :: EventId -> UserId -> BinahRecord (Entity User) TimeOnly
-mkTimeOnly x_0 x_1 = BinahRecord (TimeOnly x_0 x_1)
+mkTimeOnly :: EventId -> UserId -> StormRecord (Entity User) TimeOnly
+mkTimeOnly x_0 x_1 = StormRecord (TimeOnly x_0 x_1)
 
 {-@ invariant {v: Entity TimeOnly | v == getJust (entityKey v)} @-}
 

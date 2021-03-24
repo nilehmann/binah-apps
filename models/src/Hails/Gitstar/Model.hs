@@ -56,7 +56,7 @@ import           Database.Persist.TH            ( share
                                                 )
 import qualified Database.Persist              as Persist
 
-import           Binah.Core
+import           Storm.Core
 
 
 
@@ -128,13 +128,13 @@ Collaborator
 -- * User
 {-@ mkUser ::
         x_0: String
-     -> BinahRecord <{\row -> userKeys (entityVal row) == x_0},
+     -> StormRecord <{\row -> userKeys (entityVal row) == x_0},
                      {\_ _ -> True},
                      {\x_0 x_1 -> False}>
                      (Entity User) User
   @-}
-mkUser :: String -> BinahRecord (Entity User) User
-mkUser x_0 = BinahRecord (User x_0)
+mkUser :: String -> StormRecord (Entity User) User
+mkUser x_0 = StormRecord (User x_0)
 
 {-@ invariant {v: Entity User | v == getJust (entityKey v)} @-}
 
@@ -170,13 +170,13 @@ userKeys' = EntityFieldWrapper UserKeys
 {-@ mkApps ::
         x_0: UserId
      -> x_1: String
-     -> BinahRecord <{\row -> appsOwner (entityVal row) == x_0 && appsName (entityVal row) == x_1},
+     -> StormRecord <{\row -> appsOwner (entityVal row) == x_0 && appsName (entityVal row) == x_1},
                      {\_ _ -> True},
                      {\x_0 x_1 -> False}>
                      (Entity User) Apps
   @-}
-mkApps :: UserId -> String -> BinahRecord (Entity User) Apps
-mkApps x_0 x_1 = BinahRecord (Apps x_0 x_1)
+mkApps :: UserId -> String -> StormRecord (Entity User) Apps
+mkApps x_0 x_1 = StormRecord (Apps x_0 x_1)
 
 {-@ invariant {v: Entity Apps | v == getJust (entityKey v)} @-}
 
@@ -228,13 +228,13 @@ appsName' = EntityFieldWrapper AppsName
         x_0: UserId
      -> x_1: String
      -> x_2: Bool
-     -> BinahRecord <{\row -> projectOwner (entityVal row) == x_0 && projectName (entityVal row) == x_1 && projectPublic (entityVal row) == x_2},
+     -> StormRecord <{\row -> projectOwner (entityVal row) == x_0 && projectName (entityVal row) == x_1 && projectPublic (entityVal row) == x_2},
                      {\row user -> entityKey user == projectOwner (entityVal row)},
                      {\x_0 x_1 -> (projectPublic (entityVal x_0) || IsCollaboratorP x_1 x_0 || IsReaderP x_1 x_0)}>
                      (Entity User) Project
   @-}
-mkProject :: UserId -> String -> Bool -> BinahRecord (Entity User) Project
-mkProject x_0 x_1 x_2 = BinahRecord (Project x_0 x_1 x_2)
+mkProject :: UserId -> String -> Bool -> StormRecord (Entity User) Project
+mkProject x_0 x_1 x_2 = StormRecord (Project x_0 x_1 x_2)
 
 {-@ invariant {v: Entity Project | v == getJust (entityKey v)} @-}
 
@@ -300,13 +300,13 @@ projectPublic' = EntityFieldWrapper ProjectPublic
 {-@ mkReader ::
         x_0: UserId
      -> x_1: ProjectId
-     -> BinahRecord <{\row -> readerUser (entityVal row) == x_0 && readerProject (entityVal row) == x_1},
+     -> StormRecord <{\row -> readerUser (entityVal row) == x_0 && readerProject (entityVal row) == x_1},
                      {\row user -> IsOwnerR user row},
                      {\x_0 x_1 -> False}>
                      (Entity User) Reader
   @-}
-mkReader :: UserId -> ProjectId -> BinahRecord (Entity User) Reader
-mkReader x_0 x_1 = BinahRecord (Reader x_0 x_1)
+mkReader :: UserId -> ProjectId -> StormRecord (Entity User) Reader
+mkReader x_0 x_1 = StormRecord (Reader x_0 x_1)
 
 {-@ invariant {v: Entity Reader | v == getJust (entityKey v)} @-}
 
@@ -357,13 +357,13 @@ readerProject' = EntityFieldWrapper ReaderProject
 {-@ mkCollaborator ::
         x_0: UserId
      -> x_1: ProjectId
-     -> BinahRecord <{\row -> collaboratorUser (entityVal row) == x_0 && collaboratorProject (entityVal row) == x_1},
+     -> StormRecord <{\row -> collaboratorUser (entityVal row) == x_0 && collaboratorProject (entityVal row) == x_1},
                      {\row user -> IsOwnerC user row},
                      {\x_0 x_1 -> False}>
                      (Entity User) Collaborator
   @-}
-mkCollaborator :: UserId -> ProjectId -> BinahRecord (Entity User) Collaborator
-mkCollaborator x_0 x_1 = BinahRecord (Collaborator x_0 x_1)
+mkCollaborator :: UserId -> ProjectId -> StormRecord (Entity User) Collaborator
+mkCollaborator x_0 x_1 = StormRecord (Collaborator x_0 x_1)
 
 {-@ invariant {v: Entity Collaborator | v == getJust (entityKey v)} @-}
 

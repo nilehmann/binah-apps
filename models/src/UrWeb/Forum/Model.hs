@@ -59,7 +59,7 @@ import           Database.Persist.TH            ( share
                                                 )
 import qualified Database.Persist              as Persist
 
-import           Binah.Core
+import           Storm.Core
 
 
 
@@ -143,13 +143,13 @@ Message
 {-@ mkUser ::
         x_0: String
      -> x_1: String
-     -> BinahRecord <{\row -> userName (entityVal row) == x_0 && userPass (entityVal row) == x_1},
+     -> StormRecord <{\row -> userName (entityVal row) == x_0 && userPass (entityVal row) == x_1},
                      {\_ _ -> True},
                      {\x_0 x_1 -> (x_0 == x_1)}>
                      (Entity User) User
   @-}
-mkUser :: String -> String -> BinahRecord (Entity User) User
-mkUser x_0 x_1 = BinahRecord (User x_0 x_1)
+mkUser :: String -> String -> StormRecord (Entity User) User
+mkUser x_0 x_1 = StormRecord (User x_0 x_1)
 
 {-@ invariant {v: Entity User | v == getJust (entityKey v)} @-}
 
@@ -199,13 +199,13 @@ userPass' = EntityFieldWrapper UserPass
 -- * RootAdmin
 {-@ mkRootAdmin ::
         x_0: UserId
-     -> BinahRecord <{\row -> rootAdminUser (entityVal row) == x_0},
+     -> StormRecord <{\row -> rootAdminUser (entityVal row) == x_0},
                      {\_ _ -> True},
                      {\x_0 x_1 -> False}>
                      (Entity User) RootAdmin
   @-}
-mkRootAdmin :: UserId -> BinahRecord (Entity User) RootAdmin
-mkRootAdmin x_0 = BinahRecord (RootAdmin x_0)
+mkRootAdmin :: UserId -> StormRecord (Entity User) RootAdmin
+mkRootAdmin x_0 = StormRecord (RootAdmin x_0)
 
 {-@ invariant {v: Entity RootAdmin | v == getJust (entityKey v)} @-}
 
@@ -241,13 +241,13 @@ rootAdminUser' = EntityFieldWrapper RootAdminUser
 {-@ mkForum ::
         x_0: String
      -> x_1: Bool
-     -> BinahRecord <{\row -> forumName (entityVal row) == x_0 && forumPublic (entityVal row) == x_1},
+     -> StormRecord <{\row -> forumName (entityVal row) == x_0 && forumPublic (entityVal row) == x_1},
                      {\_ user -> IsRootAdmin user},
                      {\x_0 x_1 -> (forumPublic (entityVal x_0) || IsRootAdmin x_1 || CanReadF x_1 x_0)}>
                      (Entity User) Forum
   @-}
-mkForum :: String -> Bool -> BinahRecord (Entity User) Forum
-mkForum x_0 x_1 = BinahRecord (Forum x_0 x_1)
+mkForum :: String -> Bool -> StormRecord (Entity User) Forum
+mkForum x_0 x_1 = StormRecord (Forum x_0 x_1)
 
 {-@ invariant {v: Entity Forum | v == getJust (entityKey v)} @-}
 
@@ -299,13 +299,13 @@ forumPublic' = EntityFieldWrapper ForumPublic
         x_0: ForumId
      -> x_1: UserId
      -> x_2: String
-     -> BinahRecord <{\row -> aclForum (entityVal row) == x_0 && aclUser (entityVal row) == x_1 && aclLevel (entityVal row) == x_2},
+     -> StormRecord <{\row -> aclForum (entityVal row) == x_0 && aclUser (entityVal row) == x_1 && aclLevel (entityVal row) == x_2},
                      {\row user -> IsForumAdminA user row || IsRootAdmin user},
                      {\x_0 x_1 -> (entityKey x_1 == aclUser (entityVal x_0) || IsRootAdmin x_1 || IsForumAdminA x_1 x_0)}>
                      (Entity User) Acl
   @-}
-mkAcl :: ForumId -> UserId -> String -> BinahRecord (Entity User) Acl
-mkAcl x_0 x_1 x_2 = BinahRecord (Acl x_0 x_1 x_2)
+mkAcl :: ForumId -> UserId -> String -> StormRecord (Entity User) Acl
+mkAcl x_0 x_1 x_2 = StormRecord (Acl x_0 x_1 x_2)
 
 {-@ invariant {v: Entity Acl | v == getJust (entityKey v)} @-}
 
@@ -378,13 +378,13 @@ aclLevel' = EntityFieldWrapper AclLevel
      -> x_2: String
      -> x_3: String
      -> x_4: Int
-     -> BinahRecord <{\row -> messageForum (entityVal row) == x_0 && messageUser (entityVal row) == x_1 && messageSubject (entityVal row) == x_2 && messageBody (entityVal row) == x_3 && messageTime (entityVal row) == x_4},
+     -> StormRecord <{\row -> messageForum (entityVal row) == x_0 && messageUser (entityVal row) == x_1 && messageSubject (entityVal row) == x_2 && messageBody (entityVal row) == x_3 && messageTime (entityVal row) == x_4},
                      {\row user -> IsRootAdmin user || CanWriteM user row},
                      {\x_0 x_1 -> (IsPublicM x_0 || CanReadM x_1 x_0 || IsRootAdmin x_1)}>
                      (Entity User) Message
   @-}
-mkMessage :: ForumId -> UserId -> String -> String -> Int -> BinahRecord (Entity User) Message
-mkMessage x_0 x_1 x_2 x_3 x_4 = BinahRecord (Message x_0 x_1 x_2 x_3 x_4)
+mkMessage :: ForumId -> UserId -> String -> String -> Int -> StormRecord (Entity User) Message
+mkMessage x_0 x_1 x_2 x_3 x_4 = StormRecord (Message x_0 x_1 x_2 x_3 x_4)
 
 {-@ invariant {v: Entity Message | v == getJust (entityKey v)} @-}
 

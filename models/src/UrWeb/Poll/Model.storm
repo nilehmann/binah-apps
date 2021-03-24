@@ -15,7 +15,7 @@ Poll
   assert { live => isLive entityKey }
 
   insert {\row user -> not (pollLive row) && pollOwner row == entityKey user}
-  update [ live ] {\old new user -> polOwner old == entityKey user && pollLive new}
+  update [ live ] {\old new user -> pollOwner old == entityKey user && pollLive new}
   read [ name, owner, live ] {\row viewer -> pollLive row || pollOwner row == entityKey viewer}
 
 Question
@@ -23,7 +23,7 @@ Question
   text String
 
   insert {\row user -> not (IsLiveQ row) && IsPollOwnerQ user row}
-  read [ poll, text ] {\row user -> IsPollOwnerQ row || IsLiveQ row}
+  read [ poll, text ] {\row user -> IsPollOwnerQ user row || IsLiveQ row}
 
 Answer
   poll PollId

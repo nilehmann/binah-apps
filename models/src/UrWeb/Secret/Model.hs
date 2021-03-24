@@ -39,7 +39,7 @@ import           Database.Persist.TH            ( share
                                                 )
 import qualified Database.Persist              as Persist
 
-import           Binah.Core
+import           Storm.Core
 
 
 
@@ -88,13 +88,13 @@ Secret
 {-@ mkUser ::
         x_0: String
      -> x_1: String
-     -> BinahRecord <{\row -> userName (entityVal row) == x_0 && userPass (entityVal row) == x_1},
+     -> StormRecord <{\row -> userName (entityVal row) == x_0 && userPass (entityVal row) == x_1},
                      {\_ _ -> True},
                      {\x_0 x_1 -> (x_0 == x_1)}>
                      (Entity User) User
   @-}
-mkUser :: String -> String -> BinahRecord (Entity User) User
-mkUser x_0 x_1 = BinahRecord (User x_0 x_1)
+mkUser :: String -> String -> StormRecord (Entity User) User
+mkUser x_0 x_1 = StormRecord (User x_0 x_1)
 
 {-@ invariant {v: Entity User | v == getJust (entityKey v)} @-}
 
@@ -146,13 +146,13 @@ userPass' = EntityFieldWrapper UserPass
         x_0: UserId
      -> x_1: String
      -> x_2: String
-     -> BinahRecord <{\row -> secretUser (entityVal row) == x_0 && secretName (entityVal row) == x_1 && secretValue (entityVal row) == x_2},
+     -> StormRecord <{\row -> secretUser (entityVal row) == x_0 && secretName (entityVal row) == x_1 && secretValue (entityVal row) == x_2},
                      {\secret user -> secretUser (entityVal secret) == entityKey user},
                      {\x_0 x_1 -> (secretUser (entityVal x_0) == entityKey x_1)}>
                      (Entity User) Secret
   @-}
-mkSecret :: UserId -> String -> String -> BinahRecord (Entity User) Secret
-mkSecret x_0 x_1 x_2 = BinahRecord (Secret x_0 x_1 x_2)
+mkSecret :: UserId -> String -> String -> StormRecord (Entity User) Secret
+mkSecret x_0 x_1 x_2 = StormRecord (Secret x_0 x_1 x_2)
 
 {-@ invariant {v: Entity Secret | v == getJust (entityKey v)} @-}
 

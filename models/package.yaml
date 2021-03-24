@@ -22,7 +22,7 @@ description:         Please see the README on GitHub at <https://github.com/nile
 dependencies:
 - liquid-base
 - liquidhaskell
-- binah
+- storm
 - frankie
 - persistent
 - persistent-template

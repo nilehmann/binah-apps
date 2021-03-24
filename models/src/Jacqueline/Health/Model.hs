@@ -149,7 +149,7 @@ import           Database.Persist.TH            ( share
                                                 )
 import qualified Database.Persist              as Persist
 
-import           Binah.Core
+import           Storm.Core
 
 
 
@@ -300,13 +300,13 @@ PersonalRepresentative
      -> x_4: Maybe CoveredEntityId
      -> x_5: Maybe BusinessAssociateId
      -> x_6: Maybe IndividualId
-     -> BinahRecord <{\row -> userUsername (entityVal row) == x_0 && userEmail (entityVal row) == x_1 && userProfileType (entityVal row) == x_2 && userName (entityVal row) == x_3 && userEntity (entityVal row) == x_4 && userAssociate (entityVal row) == x_5 && userIndividual (entityVal row) == x_6},
+     -> StormRecord <{\row -> userUsername (entityVal row) == x_0 && userEmail (entityVal row) == x_1 && userProfileType (entityVal row) == x_2 && userName (entityVal row) == x_3 && userEntity (entityVal row) == x_4 && userAssociate (entityVal row) == x_5 && userIndividual (entityVal row) == x_6},
                      {\_ _ -> True},
                      {\x_0 x_1 -> (x_0 == x_1)}>
                      (Entity User) User
   @-}
-mkUser :: String -> String -> Int -> String -> Maybe CoveredEntityId -> Maybe BusinessAssociateId -> Maybe IndividualId -> BinahRecord (Entity User) User
-mkUser x_0 x_1 x_2 x_3 x_4 x_5 x_6 = BinahRecord (User x_0 x_1 x_2 x_3 x_4 x_5 x_6)
+mkUser :: String -> String -> Int -> String -> Maybe CoveredEntityId -> Maybe BusinessAssociateId -> Maybe IndividualId -> StormRecord (Entity User) User
+mkUser x_0 x_1 x_2 x_3 x_4 x_5 x_6 = StormRecord (User x_0 x_1 x_2 x_3 x_4 x_5 x_6)
 
 {-@ invariant {v: Entity User | v == getJust (entityKey v)} @-}
 
@@ -434,13 +434,13 @@ userIndividual' = EntityFieldWrapper UserIndividual
      -> x_1: String
      -> x_2: String
      -> x_3: String
-     -> BinahRecord <{\row -> addressStreet (entityVal row) == x_0 && addressCity (entityVal row) == x_1 && addressState (entityVal row) == x_2 && addressZipcode (entityVal row) == x_3},
+     -> StormRecord <{\row -> addressStreet (entityVal row) == x_0 && addressCity (entityVal row) == x_1 && addressState (entityVal row) == x_2 && addressZipcode (entityVal row) == x_3},
                      {\_ _ -> True},
                      {\x_0 x_1 -> False}>
                      (Entity User) Address
   @-}
-mkAddress :: Maybe String -> String -> String -> String -> BinahRecord (Entity User) Address
-mkAddress x_0 x_1 x_2 x_3 = BinahRecord (Address x_0 x_1 x_2 x_3)
+mkAddress :: Maybe String -> String -> String -> String -> StormRecord (Entity User) Address
+mkAddress x_0 x_1 x_2 x_3 = StormRecord (Address x_0 x_1 x_2 x_3)
 
 {-@ invariant {v: Entity Address | v == getJust (entityKey v)} @-}
 
@@ -530,13 +530,13 @@ addressZipcode' = EntityFieldWrapper AddressZipcode
      -> x_8: Maybe String
      -> x_9: Maybe String
      -> x_10: Maybe String
-     -> BinahRecord <{\row -> individualFirstName (entityVal row) == x_0 && individualLastName (entityVal row) == x_1 && individualEmail (entityVal row) == x_2 && individualAsddress (entityVal row) == x_3 && individualBirthDate (entityVal row) == x_4 && individualSsn (entityVal row) == x_5 && individualThelephoneNumber (entityVal row) == x_6 && individualFaxNumber (entityVal row) == x_7 && individualDriversLicenseNumber (entityVal row) == x_8 && individualEmployer (entityVal row) == x_9 && individualReligiousAffiliation (entityVal row) == x_10},
+     -> StormRecord <{\row -> individualFirstName (entityVal row) == x_0 && individualLastName (entityVal row) == x_1 && individualEmail (entityVal row) == x_2 && individualAsddress (entityVal row) == x_3 && individualBirthDate (entityVal row) == x_4 && individualSsn (entityVal row) == x_5 && individualThelephoneNumber (entityVal row) == x_6 && individualFaxNumber (entityVal row) == x_7 && individualDriversLicenseNumber (entityVal row) == x_8 && individualEmployer (entityVal row) == x_9 && individualReligiousAffiliation (entityVal row) == x_10},
                      {\_ _ -> True},
                      {\x_0 x_1 -> (userProfileType (entityVal x_1) == 1 || fromJust (userIndividual (entityVal x_1)) == entityKey x_0)}>
                      (Entity User) Individual
   @-}
-mkIndividual :: String -> String -> Maybe String -> Maybe AddressId -> Maybe String -> Maybe String -> Maybe String -> Maybe String -> Maybe String -> Maybe String -> Maybe String -> BinahRecord (Entity User) Individual
-mkIndividual x_0 x_1 x_2 x_3 x_4 x_5 x_6 x_7 x_8 x_9 x_10 = BinahRecord (Individual x_0 x_1 x_2 x_3 x_4 x_5 x_6 x_7 x_8 x_9 x_10)
+mkIndividual :: String -> String -> Maybe String -> Maybe AddressId -> Maybe String -> Maybe String -> Maybe String -> Maybe String -> Maybe String -> Maybe String -> Maybe String -> StormRecord (Entity User) Individual
+mkIndividual x_0 x_1 x_2 x_3 x_4 x_5 x_6 x_7 x_8 x_9 x_10 = StormRecord (Individual x_0 x_1 x_2 x_3 x_4 x_5 x_6 x_7 x_8 x_9 x_10)
 
 {-@ invariant {v: Entity Individual | v == getJust (entityKey v)} @-}
 
@@ -722,13 +722,13 @@ individualReligiousAffiliation' = EntityFieldWrapper IndividualReligiousAffiliat
 {-@ mkBusinessAssociate ::
         x_0: String
      -> x_1: Bool
-     -> BinahRecord <{\row -> businessAssociateName (entityVal row) == x_0 && businessAssociateCovered (entityVal row) == x_1},
+     -> StormRecord <{\row -> businessAssociateName (entityVal row) == x_0 && businessAssociateCovered (entityVal row) == x_1},
                      {\_ _ -> True},
                      {\x_0 x_1 -> False}>
                      (Entity User) BusinessAssociate
   @-}
-mkBusinessAssociate :: String -> Bool -> BinahRecord (Entity User) BusinessAssociate
-mkBusinessAssociate x_0 x_1 = BinahRecord (BusinessAssociate x_0 x_1)
+mkBusinessAssociate :: String -> Bool -> StormRecord (Entity User) BusinessAssociate
+mkBusinessAssociate x_0 x_1 = StormRecord (BusinessAssociate x_0 x_1)
 
 {-@ invariant {v: Entity BusinessAssociate | v == getJust (entityKey v)} @-}
 
@@ -779,13 +779,13 @@ businessAssociateCovered' = EntityFieldWrapper BusinessAssociateCovered
 {-@ mkCoveredEntity ::
         x_0: String
      -> x_1: String
-     -> BinahRecord <{\row -> coveredEntityEin (entityVal row) == x_0 && coveredEntityName (entityVal row) == x_1},
+     -> StormRecord <{\row -> coveredEntityEin (entityVal row) == x_0 && coveredEntityName (entityVal row) == x_1},
                      {\_ _ -> True},
                      {\x_0 x_1 -> False}>
                      (Entity User) CoveredEntity
   @-}
-mkCoveredEntity :: String -> String -> BinahRecord (Entity User) CoveredEntity
-mkCoveredEntity x_0 x_1 = BinahRecord (CoveredEntity x_0 x_1)
+mkCoveredEntity :: String -> String -> StormRecord (Entity User) CoveredEntity
+mkCoveredEntity x_0 x_1 = StormRecord (CoveredEntity x_0 x_1)
 
 {-@ invariant {v: Entity CoveredEntity | v == getJust (entityKey v)} @-}
 
@@ -840,13 +840,13 @@ coveredEntityName' = EntityFieldWrapper CoveredEntityName
      -> x_3: Maybe String
      -> x_4: Maybe String
      -> x_5: Maybe String
-     -> BinahRecord <{\row -> hospitalVisitPatient (entityVal row) == x_0 && hospitalVisitHospital (entityVal row) == x_1 && hospitalVisitDateAdmitted (entityVal row) == x_2 && hospitalVisitLocation (entityVal row) == x_3 && hospitalVisitCondition (entityVal row) == x_4 && hospitalVisitDateReleased (entityVal row) == x_5},
+     -> StormRecord <{\row -> hospitalVisitPatient (entityVal row) == x_0 && hospitalVisitHospital (entityVal row) == x_1 && hospitalVisitDateAdmitted (entityVal row) == x_2 && hospitalVisitLocation (entityVal row) == x_3 && hospitalVisitCondition (entityVal row) == x_4 && hospitalVisitDateReleased (entityVal row) == x_5},
                      {\_ _ -> True},
                      {\x_0 x_1 -> ((userProfileType (entityVal x_1) == 1 => hospitalVisitPatient (entityVal x_0) == fromJust (userIndividual (entityVal x_1))) || (userProfileType (entityVal x_1) == 2 => hospitalVisitHospital (entityVal x_0) == fromJust (userEntity (entityVal x_1))) || userProfileType (entityVal x_1) == 6)}>
                      (Entity User) HospitalVisit
   @-}
-mkHospitalVisit :: IndividualId -> CoveredEntityId -> Maybe String -> Maybe String -> Maybe String -> Maybe String -> BinahRecord (Entity User) HospitalVisit
-mkHospitalVisit x_0 x_1 x_2 x_3 x_4 x_5 = BinahRecord (HospitalVisit x_0 x_1 x_2 x_3 x_4 x_5)
+mkHospitalVisit :: IndividualId -> CoveredEntityId -> Maybe String -> Maybe String -> Maybe String -> Maybe String -> StormRecord (Entity User) HospitalVisit
+mkHospitalVisit x_0 x_1 x_2 x_3 x_4 x_5 = StormRecord (HospitalVisit x_0 x_1 x_2 x_3 x_4 x_5)
 
 {-@ invariant {v: Entity HospitalVisit | v == getJust (entityKey v)} @-}
 
@@ -960,13 +960,13 @@ hospitalVisitDateReleased' = EntityFieldWrapper HospitalVisitDateReleased
      -> x_2: Maybe CoveredEntityId
      -> x_3: Maybe CoveredEntityId
      -> x_4: Maybe IndividualId
-     -> BinahRecord <{\row -> treatmentService (entityVal row) == x_0 && treatmentDatePerformed (entityVal row) == x_1 && treatmentPrescribingEntity (entityVal row) == x_2 && treatmentPerformingEntity (entityVal row) == x_3 && treatmentPatient (entityVal row) == x_4},
+     -> StormRecord <{\row -> treatmentService (entityVal row) == x_0 && treatmentDatePerformed (entityVal row) == x_1 && treatmentPrescribingEntity (entityVal row) == x_2 && treatmentPerformingEntity (entityVal row) == x_3 && treatmentPatient (entityVal row) == x_4},
                      {\_ _ -> True},
                      {\x_0 x_1 -> ((userProfileType (entityVal x_1) == 1 => treatmentPatient (entityVal x_0) == userIndividual (entityVal x_1)) || (userProfileType (entityVal x_1) == 2 => treatmentPrescribingEntity (entityVal x_0) == userEntity (entityVal x_1)))}>
                      (Entity User) Treatment
   @-}
-mkTreatment :: String -> String -> Maybe CoveredEntityId -> Maybe CoveredEntityId -> Maybe IndividualId -> BinahRecord (Entity User) Treatment
-mkTreatment x_0 x_1 x_2 x_3 x_4 = BinahRecord (Treatment x_0 x_1 x_2 x_3 x_4)
+mkTreatment :: String -> String -> Maybe CoveredEntityId -> Maybe CoveredEntityId -> Maybe IndividualId -> StormRecord (Entity User) Treatment
+mkTreatment x_0 x_1 x_2 x_3 x_4 = StormRecord (Treatment x_0 x_1 x_2 x_3 x_4)
 
 {-@ invariant {v: Entity Treatment | v == getJust (entityKey v)} @-}
 
@@ -1065,13 +1065,13 @@ treatmentPatient' = EntityFieldWrapper TreatmentPatient
      -> x_2: String
      -> x_3: CoveredEntityId
      -> x_4: Maybe IndividualId
-     -> BinahRecord <{\row -> diagnosisManifestation (entityVal row) == x_0 && diagnosisDiagnosis (entityVal row) == x_1 && diagnosisDateRecognized (entityVal row) == x_2 && diagnosisRecognizingEntity (entityVal row) == x_3 && diagnosisPatitent (entityVal row) == x_4},
+     -> StormRecord <{\row -> diagnosisManifestation (entityVal row) == x_0 && diagnosisDiagnosis (entityVal row) == x_1 && diagnosisDateRecognized (entityVal row) == x_2 && diagnosisRecognizingEntity (entityVal row) == x_3 && diagnosisPatitent (entityVal row) == x_4},
                      {\_ _ -> True},
                      {\x_0 x_1 -> False}>
                      (Entity User) Diagnosis
   @-}
-mkDiagnosis :: String -> String -> String -> CoveredEntityId -> Maybe IndividualId -> BinahRecord (Entity User) Diagnosis
-mkDiagnosis x_0 x_1 x_2 x_3 x_4 = BinahRecord (Diagnosis x_0 x_1 x_2 x_3 x_4)
+mkDiagnosis :: String -> String -> String -> CoveredEntityId -> Maybe IndividualId -> StormRecord (Entity User) Diagnosis
+mkDiagnosis x_0 x_1 x_2 x_3 x_4 = StormRecord (Diagnosis x_0 x_1 x_2 x_3 x_4)
 
 {-@ invariant {v: Entity Diagnosis | v == getJust (entityKey v)} @-}
 
@@ -1166,13 +1166,13 @@ diagnosisPatitent' = EntityFieldWrapper DiagnosisPatitent
 -- * InformationTransferSet
 {-@ mkInformationTransferSet ::
         x_0: String
-     -> BinahRecord <{\row -> informationTransferSetData (entityVal row) == x_0},
+     -> StormRecord <{\row -> informationTransferSetData (entityVal row) == x_0},
                      {\_ _ -> True},
                      {\x_0 x_1 -> False}>
                      (Entity User) InformationTransferSet
   @-}
-mkInformationTransferSet :: String -> BinahRecord (Entity User) InformationTransferSet
-mkInformationTransferSet x_0 = BinahRecord (InformationTransferSet x_0)
+mkInformationTransferSet :: String -> StormRecord (Entity User) InformationTransferSet
+mkInformationTransferSet x_0 = StormRecord (InformationTransferSet x_0)
 
 {-@ invariant {v: Entity InformationTransferSet | v == getJust (entityKey v)} @-}
 
@@ -1208,13 +1208,13 @@ informationTransferSetData' = EntityFieldWrapper InformationTransferSetData
 {-@ mkTreatmentTransfer ::
         x_0: InformationTransferSetId
      -> x_1: TreatmentId
-     -> BinahRecord <{\row -> treatmentTransferSet (entityVal row) == x_0 && treatmentTransferTreatment (entityVal row) == x_1},
+     -> StormRecord <{\row -> treatmentTransferSet (entityVal row) == x_0 && treatmentTransferTreatment (entityVal row) == x_1},
                      {\_ _ -> True},
                      {\x_0 x_1 -> False}>
                      (Entity User) TreatmentTransfer
   @-}
-mkTreatmentTransfer :: InformationTransferSetId -> TreatmentId -> BinahRecord (Entity User) TreatmentTransfer
-mkTreatmentTransfer x_0 x_1 = BinahRecord (TreatmentTransfer x_0 x_1)
+mkTreatmentTransfer :: InformationTransferSetId -> TreatmentId -> StormRecord (Entity User) TreatmentTransfer
+mkTreatmentTransfer x_0 x_1 = StormRecord (TreatmentTransfer x_0 x_1)
 
 {-@ invariant {v: Entity TreatmentTransfer | v == getJust (entityKey v)} @-}
 
@@ -1265,13 +1265,13 @@ treatmentTransferTreatment' = EntityFieldWrapper TreatmentTransferTreatment
 {-@ mkDiagnosisTransfer ::
         x_0: InformationTransferSetId
      -> x_1: DiagnosisId
-     -> BinahRecord <{\row -> diagnosisTransferSet (entityVal row) == x_0 && diagnosisTransferDiagnosis (entityVal row) == x_1},
+     -> StormRecord <{\row -> diagnosisTransferSet (entityVal row) == x_0 && diagnosisTransferDiagnosis (entityVal row) == x_1},
                      {\_ _ -> True},
                      {\x_0 x_1 -> False}>
                      (Entity User) DiagnosisTransfer
   @-}
-mkDiagnosisTransfer :: InformationTransferSetId -> DiagnosisId -> BinahRecord (Entity User) DiagnosisTransfer
-mkDiagnosisTransfer x_0 x_1 = BinahRecord (DiagnosisTransfer x_0 x_1)
+mkDiagnosisTransfer :: InformationTransferSetId -> DiagnosisId -> StormRecord (Entity User) DiagnosisTransfer
+mkDiagnosisTransfer x_0 x_1 = StormRecord (DiagnosisTransfer x_0 x_1)
 
 {-@ invariant {v: Entity DiagnosisTransfer | v == getJust (entityKey v)} @-}
 
@@ -1322,13 +1322,13 @@ diagnosisTransferDiagnosis' = EntityFieldWrapper DiagnosisTransferDiagnosis
 {-@ mkHospitalVisitTransfer ::
         x_0: InformationTransferSetId
      -> x_1: HospitalVisitId
-     -> BinahRecord <{\row -> hospitalVisitTransferSet (entityVal row) == x_0 && hospitalVisitTransferVisit (entityVal row) == x_1},
+     -> StormRecord <{\row -> hospitalVisitTransferSet (entityVal row) == x_0 && hospitalVisitTransferVisit (entityVal row) == x_1},
                      {\_ _ -> True},
                      {\x_0 x_1 -> False}>
                      (Entity User) HospitalVisitTransfer
   @-}
-mkHospitalVisitTransfer :: InformationTransferSetId -> HospitalVisitId -> BinahRecord (Entity User) HospitalVisitTransfer
-mkHospitalVisitTransfer x_0 x_1 = BinahRecord (HospitalVisitTransfer x_0 x_1)
+mkHospitalVisitTransfer :: InformationTransferSetId -> HospitalVisitId -> StormRecord (Entity User) HospitalVisitTransfer
+mkHospitalVisitTransfer x_0 x_1 = StormRecord (HospitalVisitTransfer x_0 x_1)
 
 {-@ invariant {v: Entity HospitalVisitTransfer | v == getJust (entityKey v)} @-}
 
@@ -1381,13 +1381,13 @@ hospitalVisitTransferVisit' = EntityFieldWrapper HospitalVisitTransferVisit
      -> x_1: CoveredEntityId
      -> x_2: InformationTransferSetId
      -> x_3: Maybe String
-     -> BinahRecord <{\row -> businessAssociateAgreementBusinessAssociate (entityVal row) == x_0 && businessAssociateAgreementCoveredEntity (entityVal row) == x_1 && businessAssociateAgreementSharedInformation (entityVal row) == x_2 && businessAssociateAgreementPurpose (entityVal row) == x_3},
+     -> StormRecord <{\row -> businessAssociateAgreementBusinessAssociate (entityVal row) == x_0 && businessAssociateAgreementCoveredEntity (entityVal row) == x_1 && businessAssociateAgreementSharedInformation (entityVal row) == x_2 && businessAssociateAgreementPurpose (entityVal row) == x_3},
                      {\_ _ -> True},
                      {\x_0 x_1 -> (businessAssociateAgreementCoveredEntity (entityVal x_0) == fromJust (userEntity (entityVal x_1)) || businessAssociateAgreementBusinessAssociate (entityVal x_0) == fromJust (userAssociate (entityVal x_1)))}>
                      (Entity User) BusinessAssociateAgreement
   @-}
-mkBusinessAssociateAgreement :: BusinessAssociateId -> CoveredEntityId -> InformationTransferSetId -> Maybe String -> BinahRecord (Entity User) BusinessAssociateAgreement
-mkBusinessAssociateAgreement x_0 x_1 x_2 x_3 = BinahRecord (BusinessAssociateAgreement x_0 x_1 x_2 x_3)
+mkBusinessAssociateAgreement :: BusinessAssociateId -> CoveredEntityId -> InformationTransferSetId -> Maybe String -> StormRecord (Entity User) BusinessAssociateAgreement
+mkBusinessAssociateAgreement x_0 x_1 x_2 x_3 = StormRecord (BusinessAssociateAgreement x_0 x_1 x_2 x_3)
 
 {-@ invariant {v: Entity BusinessAssociateAgreement | v == getJust (entityKey v)} @-}
 
@@ -1473,13 +1473,13 @@ businessAssociateAgreementPurpose' = EntityFieldWrapper BusinessAssociateAgreeme
      -> x_4: String
      -> x_5: String
      -> x_6: String
-     -> BinahRecord <{\row -> transactionStandard (entityVal row) == x_0 && transactionFirstParty (entityVal row) == x_1 && transactionSecondParty (entityVal row) == x_2 && transactionSharedInformation (entityVal row) == x_3 && transactionDateRequested (entityVal row) == x_4 && transactionDateResponded (entityVal row) == x_5 && transactionPurpose (entityVal row) == x_6},
+     -> StormRecord <{\row -> transactionStandard (entityVal row) == x_0 && transactionFirstParty (entityVal row) == x_1 && transactionSecondParty (entityVal row) == x_2 && transactionSharedInformation (entityVal row) == x_3 && transactionDateRequested (entityVal row) == x_4 && transactionDateResponded (entityVal row) == x_5 && transactionPurpose (entityVal row) == x_6},
                      {\_ _ -> True},
                      {\x_0 x_1 -> (userProfileType (entityVal x_1) == 2 || transactionFirstParty (entityVal x_0) == fromJust (userEntity (entityVal x_1)) || transactionSecondParty (entityVal x_0) == fromJust (userEntity (entityVal x_1)))}>
                      (Entity User) Transaction
   @-}
-mkTransaction :: String -> CoveredEntityId -> CoveredEntityId -> InformationTransferSetId -> String -> String -> String -> BinahRecord (Entity User) Transaction
-mkTransaction x_0 x_1 x_2 x_3 x_4 x_5 x_6 = BinahRecord (Transaction x_0 x_1 x_2 x_3 x_4 x_5 x_6)
+mkTransaction :: String -> CoveredEntityId -> CoveredEntityId -> InformationTransferSetId -> String -> String -> String -> StormRecord (Entity User) Transaction
+mkTransaction x_0 x_1 x_2 x_3 x_4 x_5 x_6 = StormRecord (Transaction x_0 x_1 x_2 x_3 x_4 x_5 x_6)
 
 {-@ invariant {v: Entity Transaction | v == getJust (entityKey v)} @-}
 
@@ -1606,13 +1606,13 @@ transactionPurpose' = EntityFieldWrapper TransactionPurpose
         x_0: IndividualId
      -> x_1: IndividualId
      -> x_2: Bool
-     -> BinahRecord <{\row -> personalRepresentativeDependent (entityVal row) == x_0 && personalRepresentativeRepresentative (entityVal row) == x_1 && personalRepresentativeParent (entityVal row) == x_2},
+     -> StormRecord <{\row -> personalRepresentativeDependent (entityVal row) == x_0 && personalRepresentativeRepresentative (entityVal row) == x_1 && personalRepresentativeParent (entityVal row) == x_2},
                      {\_ _ -> True},
                      {\x_0 x_1 -> False}>
                      (Entity User) PersonalRepresentative
   @-}
-mkPersonalRepresentative :: IndividualId -> IndividualId -> Bool -> BinahRecord (Entity User) PersonalRepresentative
-mkPersonalRepresentative x_0 x_1 x_2 = BinahRecord (PersonalRepresentative x_0 x_1 x_2)
+mkPersonalRepresentative :: IndividualId -> IndividualId -> Bool -> StormRecord (Entity User) PersonalRepresentative
+mkPersonalRepresentative x_0 x_1 x_2 = StormRecord (PersonalRepresentative x_0 x_1 x_2)
 
 {-@ invariant {v: Entity PersonalRepresentative | v == getJust (entityKey v)} @-}
 
