@@ -10,14 +10,15 @@ import           Database.Persist.Sql           ( fromSqlKey
                                                 , ToBackendKey
                                                 , SqlBackend
                                                 )
-import           Binah.Core
-import           Binah.Actions
-import           Binah.Filters
-import           Binah.Infrastructure
-import           Binah.Templates
-import           Binah.Frankie
+import           Storm.Core
+import           Storm.Actions
+import           Storm.Filters
+import           Storm.Infrastructure
+import           Storm.Templates
+import           Storm.Frankie
 import           Model
 import           Controllers
+import           Stage
 
 {-@ pc :: u:_ -> TaggedT<{\_ -> True}, {\_ -> False}> _ _ {v: Bool | v <=> IsPc u} @-}
 pc :: Monad m => Entity User -> TaggedT (Entity User) m Bool
@@ -32,7 +33,7 @@ chair user = do
   return (level == "chair")
 
 {-@ checkPcOr :: Response -> u:Entity User ->
-  TaggedT<{\_ -> True}, {\v -> v == currentUser 0}> _ _ {v: () | IsPc u} @-}
+      TaggedT<{\_ -> True}, {\v -> v == currentUser 0}> _ _ {v: () | IsPc u} @-}
 checkPcOr :: Response -> Entity User -> Controller ()
 checkPcOr response user = do
   level <- project userLevel' user
@@ -47,7 +48,7 @@ checkChairOr response user = do
   if level == "chair" then return () else respondTagged response
 
 {-@ checkStageOr :: Response -> s:String
-  -> TaggedT<{\_ -> True}, {\v -> v == currentUser 0}> _ _ {v: () | s == currentStage} @-}
+      -> TaggedT<{\_ -> True}, {\v -> v == currentUser 0}> _ _ {v: () | s == currentStage} @-}
 checkStageOr :: Response -> String -> Controller ()
 checkStageOr response stage = if currentStage == stage then return () else respondTagged response
 

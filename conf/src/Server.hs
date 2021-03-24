@@ -24,12 +24,14 @@ import           Frankie.Config
 import           Frankie.Auth
 import qualified Database.Persist              as Persistent
 
-import           Binah.Core
-import           Binah.Frankie
-import           Binah.Infrastructure
-import           Binah.Insert
-import           Binah.Actions
-import           Binah.Filters
+import           Storm.Core
+import           Storm.Frankie
+import           Storm.Infrastructure
+import           Storm.Insert
+import           Storm.Actions
+import           Storm.Filters
+
+import           Storm.Updates          -- TODO: DUMMY RECURSIVE IMPORTS for LH 
 
 import           Controllers
 import           Controllers.Paper
@@ -48,6 +50,7 @@ import           Control.Monad.Logger           ( runNoLoggingT )
 
 
 
+{-@ ignore runServer @-}
 runServer :: IO ()
 runServer = runNoLoggingT $ do
     pool  <- createSqlitePool "db.sqlite" 1
@@ -80,14 +83,6 @@ httpAuthDb = httpBasicAuth $ \username _password -> selectFirst (userName' ==. u
 initDB :: IO ()
 initDB = runSqlite "db.sqlite" $ do
     runMigration migrateAll
-    let (BinahRecord nadia) =
-        (mkUser "nadia" "Nadia Polikarpova" "npolikarpova@ucsd.edu" "ucsd" "chair")
-    Persistent.insert nadia
-    let (BinahRecord ranjit) = (mkUser "ranjit" "Ranjit Jhala" "npolikarpova@ucsd.edu" "ucsd" "pc")
-    Persistent.insert ranjit
-    let (BinahRecord rose) = (mkUser "rose" "Rose Kunkel" "rkunkel@ucsd.edu" "ucsd" "author")
-    Persistent.insert rose
-
     return ()
 
 -- TODO find a way to provide this without exposing the instance of MonadBaseControl

@@ -24,16 +24,17 @@ import           Text.Printf                    ( printf )
 import           Text.Read                      ( readMaybe )
 import           Frankie
 
-import           Binah.Core
-import           Binah.Actions
-import           Binah.Filters
-import           Binah.Helpers
-import           Binah.Infrastructure
-import           Binah.Templates
-import           Binah.Frankie
-import           Binah.Insert
-import           Binah.Updates
+import           Storm.Core
+import           Storm.Actions
+import           Storm.Filters
+import           Storm.Helpers
+import           Storm.Infrastructure
+import           Storm.Templates
+import           Storm.Frankie
+import           Storm.Insert
+import           Storm.Updates
 import           Model
+import           Stage
 
 import           Helpers
 import           Controllers
@@ -112,7 +113,7 @@ paperEdit pid = do
         Just (paperData, _) -> respondHtml $ PaperEdit paperId paperData
 
 {-@ updatePaper :: {v: UserId | v == entityKey (currentUser 0)} -> PaperId
-  -> TaggedT<{\v -> v == currentUser 0}, {\_ -> True}> _ _ _ @-}
+      -> TaggedT<{\v -> v == currentUser 0}, {\_ -> True}> _ _ _ @-}
 updatePaper :: UserId -> PaperId -> Controller ()
 updatePaper viewerId paperId = do
   _      <- checkStageOr forbidden "submit"
@@ -140,7 +141,7 @@ paperNew = do
   if reqMethod req == methodPost then insertPaper viewerId else respondHtml PaperNew
 
 {-@ insertPaper :: {u:_ | u == entityKey (currentUser 0)} ->
-  TaggedT<{\v -> v == currentUser 0}, {\_ -> True}> _ _ _ @-}
+      TaggedT<{\v -> v == currentUser 0}, {\_ -> True}> _ _ _ @-}
 insertPaper :: UserId -> Controller ()
 insertPaper authorId = do
   params <- parseForm
@@ -239,9 +240,9 @@ getPaper paperId = do
 
 
 {-@ getReviews :: p: _ ->
-  TaggedT< {\v -> IsPc v || (currentStage == "public" && isAuthor (entityKey v) (entityKey p))},
-         , {\_ -> False}
-         > _ _ _ @-}
+      TaggedT< {\v -> IsPc v || (currentStage == "public" && isAuthor (entityKey v) (entityKey p))}
+             , {\_ -> False}
+             > _ _ _ @-}
 getReviews :: Entity Paper -> Controller [AnonymousReview]
 getReviews paper = do
   paperId     <- project paperId' paper

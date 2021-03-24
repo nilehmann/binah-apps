@@ -1,4 +1,5 @@
 import Data.Text (Text)
+import Stage
 
 predicate isAuthor   :: UserId -> PaperId -> Bool
 predicate isAccepted :: PaperId -> Bool
@@ -110,12 +111,3 @@ policy PcOrAuthorIfPublic = \review viewer ->
     (currentStage == "public" &&
       isAuthor (entityKey viewer) (reviewPaper review))
 
-#inline
--- {-@ data Stage = SubmitStage | ReviewStage | PublicStage @-}
--- data Stage = SubmitStage | ReviewStage | PublicStage deriving Eq
-
-{-@ measure currentStage :: String @-}
-
-{-@ assume currentStage :: {v: String | currentStage == v} @-}
-currentStage :: String
-currentStage = "submit"

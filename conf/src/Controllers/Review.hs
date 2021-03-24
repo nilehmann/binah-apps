@@ -24,16 +24,17 @@ import           Text.Printf                    ( printf )
 import           Text.Read                      ( readMaybe )
 import           Frankie
 
-import           Binah.Core
-import           Binah.Actions
-import           Binah.Filters
-import           Binah.Helpers
-import           Binah.Infrastructure
-import           Binah.Templates
-import           Binah.Frankie
-import           Binah.Updates
-import           Binah.Insert
+import           Storm.Core
+import           Storm.Actions
+import           Storm.Filters
+import           Storm.Helpers
+import           Storm.Infrastructure
+import           Storm.Templates
+import           Storm.Frankie
+import           Storm.Updates
+import           Storm.Insert
 import           Model
+import           Stage
 
 import           Helpers
 import           Controllers
