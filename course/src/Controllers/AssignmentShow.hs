@@ -13,13 +13,13 @@ import           Text.Mustache                  ( (~>)
 import qualified Text.Mustache.Types           as Mustache
 import           Frankie
 
-import           Binah.Core
-import           Binah.Actions
-import           Binah.Filters
-import           Binah.Helpers
-import           Binah.Infrastructure
-import           Binah.Templates
-import           Binah.Frankie
+import           Storm.Core
+import           Storm.Actions
+import           Storm.Filters
+import           Storm.Helpers
+import           Storm.Infrastructure
+import           Storm.Templates
+import           Storm.Frankie
 import           Model
 
 import           Controllers

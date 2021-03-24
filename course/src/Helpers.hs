@@ -11,7 +11,7 @@ import           Database.Persist.Sql           ( fromSqlKey
                                                 , SqlBackend
                                                 )
 
-import           Binah.Core
+import           Storm.Core
 import           Model
 
 outerJoinBy :: Eq key => (a -> key) -> (b -> key) -> (a -> Maybe b -> c) -> [a] -> [b] -> [c]

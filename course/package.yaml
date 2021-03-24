@@ -20,7 +20,7 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/nilehmann/course#readme>
 
 dependencies:
-- base >= 4.7 && < 5
+#- base >= 4.7 && < 5
 - base64-bytestring
 - bytestring
 - either
@@ -44,9 +44,14 @@ dependencies:
 - mime-mail
 - network
 - monad-time
+- storm
+- liquid-base
+- liquidhaskell >= 0.8.10
+
 
 library:
   source-dirs: src
+  ghc-options: -fplugin=LiquidHaskell
 
 executables:
   course-exe:
