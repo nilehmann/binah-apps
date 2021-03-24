@@ -48,7 +48,7 @@ import           Database.Persist.TH            ( share
 import           Data.Text                      ( Text )
 import qualified Database.Persist              as Persist
 
-import           Binah.Core
+import           Storm.Core
 
 
 
@@ -95,14 +95,14 @@ Friendship
 {-@ mkUser ::
      x_0: Text
   -> x_1: Text
-  -> BinahRecord <
+  -> StormRecord <
        {\row -> userName (entityVal row) == x_0 && userUsername (entityVal row) == x_1}
      , {\_ _ -> True}
      , {\x_0 x_1 -> False}
      > (Entity User) User
 @-}
-mkUser :: Text -> Text -> BinahRecord (Entity User) User
-mkUser x_0 x_1 = BinahRecord (User x_0 x_1)
+mkUser :: Text -> Text -> StormRecord (Entity User) User
+mkUser x_0 x_1 = StormRecord (User x_0 x_1)
 
 {-@ invariant {v: Entity User | v == getJust (entityKey v)} @-}
 
@@ -154,14 +154,14 @@ userUsername' = EntityFieldWrapper UserUsername
      x_0: UserId
   -> x_1: Text
   -> x_2: String
-  -> BinahRecord <
+  -> StormRecord <
        {\row -> wishOwner (entityVal row) == x_0 && wishDescription (entityVal row) == x_1 && wishAccessLevel (entityVal row) == x_2}
      , {\wish viewer -> wishOwner (entityVal wish) == entityKey viewer}
      , {\x_0 x_1 -> (wishAccessLevel (entityVal x_0) == "public" || wishOwner (entityVal x_0) == entityKey x_1 || (wishAccessLevel (entityVal x_0) == "friends" && friends (wishOwner (entityVal x_0)) (entityKey x_1)))}
      > (Entity User) Wish
 @-}
-mkWish :: UserId -> Text -> String -> BinahRecord (Entity User) Wish
-mkWish x_0 x_1 x_2 = BinahRecord (Wish x_0 x_1 x_2)
+mkWish :: UserId -> Text -> String -> StormRecord (Entity User) Wish
+mkWish x_0 x_1 x_2 = StormRecord (Wish x_0 x_1 x_2)
 
 {-@ invariant {v: Entity Wish | v == getJust (entityKey v)} @-}
 
@@ -228,14 +228,14 @@ wishAccessLevel' = EntityFieldWrapper WishAccessLevel
      x_0: UserId
   -> x_1: UserId
   -> x_2: String
-  -> BinahRecord <
+  -> StormRecord <
        {\row -> friendshipUser1 (entityVal row) == x_0 && friendshipUser2 (entityVal row) == x_1 && friendshipStatus (entityVal row) == x_2}
      , {\row user -> friendshipUser1 (entityVal row) == entityKey user && friendshipStatus (entityVal row) == "pending"}
      , {\x_0 x_1 -> False}
      > (Entity User) Friendship
 @-}
-mkFriendship :: UserId -> UserId -> String -> BinahRecord (Entity User) Friendship
-mkFriendship x_0 x_1 x_2 = BinahRecord (Friendship x_0 x_1 x_2)
+mkFriendship :: UserId -> UserId -> String -> StormRecord (Entity User) Friendship
+mkFriendship x_0 x_1 x_2 = StormRecord (Friendship x_0 x_1 x_2)
 
 {-@ invariant {v: Entity Friendship | v == getJust (entityKey v)} @-}
 

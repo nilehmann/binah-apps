@@ -17,13 +17,13 @@ import           Frankie.Config
 import           Frankie.Auth
 import qualified Database.Persist              as Persistent
 
-import           Binah.Frankie
-import           Binah.Core
-import           Binah.Infrastructure
-import           Binah.Filters
-import           Binah.Insert
-import           Binah.Updates
-import           Binah.Actions
+import           Storm.Frankie
+import           Storm.Core
+import           Storm.Infrastructure
+import           Storm.Filters
+import           Storm.Insert
+import           Storm.Updates
+import           Storm.Actions
 
 import           Controllers
 import           Controllers.Wish               ( wishNew

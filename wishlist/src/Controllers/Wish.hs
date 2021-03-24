@@ -23,15 +23,15 @@ import qualified Text.Mustache.Types           as M
 import           Text.Printf                    ( printf )
 import           Frankie
 
-import           Binah.Core
-import           Binah.Actions
-import           Binah.Updates
-import           Binah.Insert
-import           Binah.Filters
-import           Binah.Helpers
-import           Binah.Infrastructure
-import           Binah.Templates
-import           Binah.Frankie
+import           Storm.Core
+import           Storm.Actions
+import           Storm.Updates
+import           Storm.Insert
+import           Storm.Filters
+import           Storm.Helpers
+import           Storm.Infrastructure
+import           Storm.Templates
+import           Storm.Frankie
 import           Model
 
 import           Helpers

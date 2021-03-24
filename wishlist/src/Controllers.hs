@@ -16,11 +16,11 @@ import           Frankie.Config
 import qualified Text.Mustache.Types           as Mustache
 
 
-import           Binah.Core
-import           Binah.Frankie
-import           Binah.Infrastructure
-import           Binah.Filters
-import           Binah.Templates
+import           Storm.Core
+import           Storm.Frankie
+import           Storm.Infrastructure
+import           Storm.Filters
+import           Storm.Templates
 import           Model
 
 data Config = Config
